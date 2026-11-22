@@ -1,0 +1,375 @@
+/* The model's leaves meet at the spine. Their outer edges and boards sit behind the front faces. */
+.shelf-visual {
+  position:relative;
+  min-width:0;
+  min-height:0;
+  overflow:hidden;
+}
+.shelf-visual.has-book {
+  background:
+    radial-gradient(ellipse at 96% -12%,#ffe1a280 0%,#d79a524c 23%,transparent 59%),
+    radial-gradient(ellipse at 68% 34%,#5f6346 0%,#273e30 55%,transparent 80%),
+    #10281f;
+}
+.shelf-visual.has-book::before {
+  content:"";
+  position:absolute;
+  top:26%;
+  left:-19%;
+  width:145%;
+  height:39%;
+  pointer-events:none;
+  transform:rotate(-31deg);
+  background:linear-gradient(180deg,transparent,#ffcd8523 27%,#ffd99d39 53%,#ffd79b1b 76%,transparent);
+  mask-image:linear-gradient(90deg,transparent 8%,#0008 36%,#000 84%);
+  filter:blur(11px);
+}
+.book-poster-button {
+  display:block;
+  width:100%;
+  height:100%;
+  padding:0;
+  overflow:hidden;
+  border:0;
+  background:none;
+}
+.book-poster-button:focus-visible {outline-offset:-4px;outline-color:#ffdf8d}
+.book-camera {
+  position:absolute;
+  inset:49px 0 43px;
+  display:grid;
+  place-items:center;
+  perspective:1250px;
+  perspective-origin:50% 48%;
+  cursor:grab;
+  touch-action:pan-y pinch-zoom;
+  user-select:none;
+  -webkit-user-select:none;
+}
+.book-camera img {pointer-events:none}
+.book-shadow {
+  position:absolute;
+  inset:63% 14% 2% 8%;
+  border-radius:50%;
+  transform:rotate(-9deg) skewX(-12deg);
+  background:radial-gradient(ellipse at 48% 50%,#0a130fe8,#11221aa6 41%,transparent 73%);
+}
+.book-model {
+  --paper-depth:clamp(9px,1.25vw,18px);
+  position:relative;
+  width:min(69%,561px);
+  aspect-ratio:1.85;
+  transform:rotateX(var(--book-pitch,34deg)) rotateY(var(--book-yaw,-13deg)) rotateZ(var(--book-roll,-5deg));
+  transform-style:preserve-3d;
+  transition:transform 560ms cubic-bezier(.22,.65,.3,1);
+}
+.book-model > :not(.book-open-target) {pointer-events:none}
+.book-open-target {
+  position:absolute;
+  inset:-8px -5px -12px;
+  width:auto;
+  padding:0;
+  border:0;
+  border-radius:8px;
+  background:none;
+  cursor:pointer;
+}
+.book-open-target:focus-visible {outline-color:#ffdf8d}
+.has-book[data-dragging] .book-camera {cursor:grabbing}
+.has-book[data-dragging] .book-open-target {cursor:grabbing}
+.has-book[data-dragging] .book-model {transition:none}
+.book-half {
+  position:absolute;
+  top:0;
+  bottom:0;
+  width:50%;
+  transform-style:preserve-3d;
+}
+.book-half-left {
+  left:0;
+  transform-origin:right center;
+  transform:rotateY(11deg);
+}
+.book-half-right {
+  right:0;
+  transform-origin:left center;
+  transform:rotateY(-11deg);
+}
+.book-board {
+  position:absolute;
+  inset:-5px 0 -7px;
+  border:1px solid #ad8052;
+  background:linear-gradient(148deg,#975b34,#56341f 51%,#41271d);
+  transform:translateZ(calc(-1 * (var(--paper-depth) + 2px)));
+  box-shadow:0 5px 6px #0b1817b0;
+}
+.book-half-left .book-board {
+  left:-7px;
+  border-radius:9px 2px 2px 9px;
+}
+.book-half-right .book-board {
+  right:-7px;
+  border-radius:2px 9px 9px 2px;
+}
+.book-leaf {
+  position:absolute;
+  inset:0;
+  padding:clamp(7px,1.35vw,19px);
+  background:
+    repeating-linear-gradient(128deg,#72533308 0 1px,transparent 1px 4px),
+    linear-gradient(148deg,#fff0cf,#ecd1a0 77%,#d8b987);
+  box-shadow:inset 0 1px 0 #fff8e0,inset 0 0 0 1px #bf9d69;
+}
+.book-half-left .book-leaf {border-radius:5px 0 0 4px}
+.book-half-right .book-leaf {border-radius:0 5px 4px 0}
+.book-leaf img {
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+  border:1px solid #c2a97a;
+}
+.book-half-left .book-leaf img {object-position:56% 59%}
+.book-half-right .book-leaf img {object-position:61% 49%}
+.book-leaf::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+.book-half-left .book-leaf::after {
+  background:
+    linear-gradient(90deg,transparent 81%,#7155332b 92%,#3b291989 100%),
+    linear-gradient(148deg,#ffdc9521,transparent 40%,#44251c28);
+}
+.book-half-right .book-leaf::after {
+  background:
+    linear-gradient(90deg,#32271b85 0%,#77573827 6%,#fff2d437 14%,transparent 28%),
+    linear-gradient(221deg,#ffdf9b6b 1%,#ffcd841d 41%,transparent 73%);
+}
+.book-edge {
+  position:absolute;
+  background:
+    linear-gradient(100deg,#3a241d3d,transparent 40%,#ffd99d46),
+    repeating-linear-gradient(#a78b60 0 .7px,#e8d2a4 .7px 2.5px,#ceb288 2.5px 3.1px);
+  box-shadow:inset 0 1px 0 #fff0c3,inset 0 -1px 0 #956c4c;
+}
+.book-edge-end {
+  width:var(--paper-depth);
+  height:100%;
+  transform:rotateY(90deg);
+  transform-origin:left center;
+  background:
+    linear-gradient(#ffdda250,transparent 65%,#56362440),
+    repeating-linear-gradient(90deg,#ad8a5b 0 .8px,#ecd3a0 .8px 3.3px);
+}
+.book-half-left .book-edge-end {left:0}
+.book-half-right .book-edge-end {left:100%}
+.book-edge-foot,.book-edge-head {
+  left:0;
+  width:100%;
+  height:var(--paper-depth);
+  transform:rotateX(-90deg);
+  transform-origin:center top;
+}
+.book-edge-foot {top:100%}
+.book-edge-head {top:0}
+.book-ribbon {
+  position:absolute;
+  left:calc(50% - 7px);
+  top:100%;
+  width:12px;
+  height:12%;
+  transform:translateZ(-5px) rotateZ(-11deg) rotateX(-24deg);
+  transform-origin:center top;
+  background:linear-gradient(90deg,#943f2a,#bf6744 56%,#893326);
+  clip-path:polygon(0 0,100% 0,100% 100%,50% 85%,0 100%);
+}
+.book-pop-shadow {
+  position:absolute;
+  bottom:20%;
+  left:6%;
+  width:72%;
+  height:14%;
+  transform:translateZ(1px) rotate(-13deg);
+  background:radial-gradient(ellipse,#242a1da6 1%,#393b243f 42%,transparent 74%);
+}
+.book-pop-up {
+  position:absolute;
+  left:18%;
+  bottom:29%;
+  width:64%;
+  height:auto;
+  transform-origin:center bottom;
+  transform:translateZ(2px) rotateX(-66deg);
+  filter:sepia(.12) brightness(1.09) drop-shadow(-2px 3px 2px #442b1c8a);
+}
+.book-turn-button {
+  position:absolute;
+  bottom:13px;
+  right:16px;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  min-height:44px;
+  padding:0 15px;
+  border:1px solid #e5c78466;
+  border-radius:99px;
+  background:#152d23ef;
+  color:#f8e4b4;
+  font-size:13px;
+}
+.book-turn-button:hover {background:#314b35;border-color:#e5c784}
+.book-turn-button:focus-visible {outline-color:#ffdf8d}
+
+/* Closed books have a pressed spine plus two visible edges of paper. */
+.story-card {
+  --volume-depth:clamp(13px,1.5vw,21px);
+  perspective:950px;
+  overflow:visible;
+  background:none;
+  isolation:auto;
+}
+.story-volume {
+  position:absolute;
+  inset:3px 10px 12px 3px;
+  transform:rotateX(10deg) rotateY(-12deg);
+  transform-style:preserve-3d;
+}
+.volume-jacket {
+  position:absolute;
+  inset:0;
+  border:1px solid #dfc79066;
+  border-radius:7px 12px 12px 7px;
+  background:var(--cover-ink);
+  overflow:hidden;
+  isolation:isolate;
+  box-shadow:inset 0 0 0 1px #ebe0be4d;
+}
+.volume-jacket::before {
+  content:"";
+  position:absolute;
+  inset:0 auto 0 0;
+  width:17px;
+  z-index:1;
+  background:linear-gradient(90deg,#19180f99,#ffefbc32 36%,#221f192e 68%,transparent);
+  pointer-events:none;
+}
+.volume-board {
+  position:absolute;
+  inset:-2px -3px -3px -1px;
+  background:var(--cover-ink);
+  border:1px solid #998362;
+  border-radius:7px 12px 12px 7px;
+  box-shadow:0 10px 18px #172f2838;
+  transform:translateZ(calc(-1 * (var(--volume-depth) + 2px)));
+}
+.volume-edge {
+  position:absolute;
+  background:repeating-linear-gradient(#9a7d53 0 1px,#e6d6ad 1px 3px,#c4aa7d 3px 4px);
+}
+.volume-edge-foot {
+  top:100%;
+  left:3px;
+  width:calc(100% - 7px);
+  height:var(--volume-depth);
+  transform:rotateX(-90deg);
+  transform-origin:center top;
+}
+.volume-edge-end {
+  left:calc(100% - 1px);
+  top:4px;
+  height:calc(100% - 9px);
+  width:var(--volume-depth);
+  transform:rotateY(90deg);
+  transform-origin:left center;
+  background:repeating-linear-gradient(90deg,#bd9f73 0 1px,#e6d6b0 1px 4px);
+}
+.story-card:focus-within {outline:2px solid var(--gold);outline-offset:2px;box-shadow:none}
+@media (hover:hover) and (pointer:fine) {
+  .story-card:hover {box-shadow:none}
+}
+
+/* The illustrated page turns at the gutter. The updated exercise stays interactive. */
+.scene-turn {
+  position:absolute;
+  inset:0;
+  z-index:1;
+  transform-style:preserve-3d;
+  pointer-events:none;
+}
+.scene-turn-front,.scene-turn-back {
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  backface-visibility:hidden;
+}
+.scene-turn-front {box-shadow:inset -2px 0 0 #fff1cd85}
+.scene-turn-back {
+  background:linear-gradient(95deg,#aa895d 0,#f4e7c9 13%,#f9efd9 58%,#caba9a 100%);
+  border:1px solid #c7ad7d;
+  transform:rotateY(180deg);
+}
+.scene-turn-back::after {
+  content:"";
+  position:absolute;
+  inset:5%;
+  border:1px solid #c9ae7d;
+  border-radius:4px;
+}
+.scene-label,.scene-counter {z-index:2}
+.scene-depth {
+  position:absolute;
+  inset:0;
+  display:block;
+  width:100%;
+  height:100%;
+  touch-action:pan-y pinch-zoom;
+  cursor:grab;
+}
+.scene[data-orbiting] .scene-depth {cursor:grabbing}
+.scene-view-button {
+  position:absolute;
+  top:12px;
+  right:12px;
+  z-index:2;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-height:44px;
+  padding:0 13px;
+  border:1px solid #f6e4b179;
+  border-radius:99px;
+  color:#fff4d8;
+  background:#132b24ee;
+  font-size:13px;
+}
+.scene-view-button span {font:400 19px/1 var(--serif)}
+.scene-view-button:hover {background:#2e473a;border-color:#f6e4b1}
+.scene-view-button:focus-visible {outline-color:#f5d287}
+#play-area .scene {
+  box-shadow:0 3px 0 #e4d8bb,0 6px 0 #c8b798,0 9px 0 var(--chapter),0 13px 16px #382a1b24;
+}
+.reading-page {
+  box-shadow:0 3px 0 #e8dec6,0 6px 0 #c8b798,0 9px 0 var(--chapter),0 13px 16px #382a1b24;
+}
+
+@media(max-width:1024px) {
+  .book-model {width:70%;aspect-ratio:1.73}
+}
+@media(max-width:760px) {
+  .shelf-visual {order:-1;width:100%;aspect-ratio:1.57}
+  .shelf-visual .shelf-art {height:100%;aspect-ratio:auto}
+  .book-camera {inset:12px 0 39px;perspective:760px}
+  .book-model {width:min(73%,340px);aspect-ratio:1.84}
+  .book-turn-button {right:10px;bottom:8px}
+  .story-volume {inset:2px 9px 9px 2px;transform:rotateX(7deg) rotateY(-9deg)}
+  #play-area .scene {box-shadow:none;aspect-ratio:1.08}
+}
+@media(prefers-reduced-motion:reduce) {
+  .book-model,.story-card,.story-cover {transition:none}
+}
+@supports not (transform-style:preserve-3d) {
+  .story-volume {transform:none}
+  .volume-board,.volume-edge {display:none}
+}
