@@ -409,7 +409,7 @@ function render() {
     const instructions = lesson.id === 'museum'
       ? '读英文线索，比较照片、实物和登记册。先判断证据能证明什么，再完成句子排序。最后用英文语境复习。'
       : '读懂线索后选择词义，用词块拼出英语句子。结尾会用新情境复习这 8 个单词。';
-    $('activity').innerHTML = `<h2>故事玩法</h2><p class="intro-description">${instructions}</p>`;
+    $('activity').innerHTML = `<h2>故事玩法</h2><p class="intro-description">${instructions}</p><p class="intro-description world-study-hint">点场景里的英文线索，听单词和例句，再用线索答题。</p>`;
     $('step-info').textContent = `${lesson.chapters.length} 幕故事 · ${lesson.steps.filter(step=>step.type==='order').length} 道句子排序 · ${lesson.review.length} 道复习`;
     $('next-button').textContent = '开启故事 →';
   } else if (state.mode === 'summary') renderSummary();
@@ -597,6 +597,66 @@ $('notebook-button').onclick = () => {
   $('word-list').innerHTML = words.length ? words.map((w,i) => `<div class="word-entry"><p class="speaker">${w.episode}${w.needsPractice?' · 待重练':''}</p><h3>${w.word} <small>${w.ipa}</small></h3><p>${w.pos} ${w.meaning}</p><p>${w.collocation}</p><p lang="en">${w.example}</p><p>${w.translation}</p><button class="text-button" data-word="${i}">▷ 朗读例句</button></div>`).join('') : '<p class="empty">答对剧情中的词义题后，单词会收进手帐。</p>';
   $('word-list').querySelectorAll('button').forEach(b => b.onclick = () => speak(words[+b.dataset.word].example));
   $('notebook').showModal();
+};
+const exhibitButton=$('world-exhibit');
+const exhibitDialog=$('exhibit-dialog');
+let exhibitTap;
+exhibitButton.onclick = () => {
+  const exhibit=storyScene3d.getExhibit();
+  if (!exhibit || exhibitDialog.open) return;
+  pauseSpeech();
+  $('exhibit-title').textContent=exhibit.name;
+  $('exhibit-title-en').textContent=exhibit.title;
+  $('exhibit-evidence').textContent=exhibit.evidence;
+  $('exhibit-translation').open=false;
+  $('exhibit-translation').querySelector('p').textContent=exhibit.translation;
+  $('exhibit-words').innerHTML=exhibit.words.map(word=>`
+    <article class="exhibit-word">
+      <h3 lang="en">${word.word} <small>${word.ipa}</small></h3>
+      <p lang="en">${word.collocation.split(' · ')[0]}</p>
+      <p class="exhibit-example" lang="en">${word.example}</p>
+      <div class="audio-row">
+        <button type="button" class="text-button" data-clip="word">▷ 听单词</button>
+        <button type="button" class="text-button" data-clip="example">▷ 听例句</button>
+      </div>
+      <details><summary>查看词义与翻译</summary><p>${word.pos} ${word.meaning}</p><p>${word.translation}</p></details>
+    </article>`).join('');
+  $('exhibit-words').querySelectorAll('.exhibit-word').forEach((entry,index)=>{
+    entry.querySelectorAll('[data-clip]').forEach(button=>{
+      button.onclick=()=>speak(exhibit.words[index][button.dataset.clip],button);
+    });
+  });
+  const docked=document.body.classList.contains('world-immersive') && matchMedia('(min-width:700px) and (any-pointer:coarse)').matches;
+  exhibitDialog.classList.toggle('exhibit-side',docked);
+  if (docked) {
+    storyScene3d.openNotes();
+    exhibitDialog.show();
+  } else exhibitDialog.showModal();
+  exhibitDialog.scrollTop=0;
+};
+exhibitButton.addEventListener('pointerdown',event=>{
+  if (event.isPrimary && event.pointerType==='touch') exhibitTap={id:event.pointerId,x:event.clientX,y:event.clientY};
+});
+exhibitButton.addEventListener('pointercancel',()=>{ exhibitTap=undefined; });
+exhibitButton.addEventListener('pointerup',event=>{
+  const tap=exhibitTap;
+  exhibitTap=undefined;
+  if (tap?.id!==event.pointerId || Math.hypot(event.clientX-tap.x,event.clientY-tap.y)>10 ||
+      document.elementFromPoint(event.clientX,event.clientY)!==exhibitButton) return;
+  // A transformed hotspot can receive the tap while the synthesized click lands on the canvas.
+  exhibitButton.click();
+});
+exhibitDialog.addEventListener('close',pauseSpeech);
+exhibitDialog.addEventListener('keydown',event=>{
+  if (event.key==='Escape' && event.currentTarget.classList.contains('exhibit-side')) {
+    event.preventDefault();
+    event.currentTarget.close();
+  }
+});
+$('exhibit-continue').onclick = () => {
+  exhibitDialog.close();
+  storyScene3d.openNotes();
+  focusReading(false);
 };
 $('settings-button').onclick = () => $('settings').showModal();
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => $(b.dataset.close).close());

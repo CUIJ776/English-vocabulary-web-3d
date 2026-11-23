@@ -93,6 +93,8 @@
     dial.material.alphaTest=.52;
     dial.rotation.x=-Math.PI/2;dial.position.y=.056;prop.add(dial);
     m('tube',brass,0,.075,0,.038,.024,.038,prop,0,'metal');
+    for(const x0 of [-.18,.18])m('tube',0x584938,x0,.073,-.19,.016,.015,.016,prop,0,'metal');
+    if(act===2) textCard(prop,0,.006,.350,.183,.072,'W07');
     return prop;
   }
   function tile(parent,x,y,z){
@@ -166,6 +168,17 @@
     m('box',wall,side*5.77,2.10,-2,.29,4.21,18.3,scene,0,'stone');
     m('box',oak,side*5.61,.58,-2,.105,1.19,18.3,scene,0,'wood');
     m('box',brass,side*5.53,1.20,-2,.035,.025,18.3,scene,0,'metal');
+    m('bevel',0x46392f,side*5.50,.12,-2,.106,.22,18.3,scene,0,'wood');
+    for(let i=0;i<11;i++){
+      const z=-10.18+i*1.65;
+      b('bevel',0x77563d,side*5.548,.62,z,.092,.79,1.37,0,0,0,'wood');
+      b('bevel',0x534333,side*5.488,.62,z,.037,.59,1.16,0,0,0,'wood');
+    }
+    for(let i=0;i<29;i++){
+      const z=-9.98+i*.59;
+      b('box',i%2?0x8e7559:0xb5a17e,side*4.61,.009,z,.113,.009,.55,0,0,0,'stone');
+      b('box',i%2?0x8c8067:0x584f47,side*4.85,.009,z,.065,.009,.55,0,0,0,'stone');
+    }
   }
   m('box',0x4b4a47,0,4.27,-2,12,.18,18.4,scene,0,'stone');
   if(gallery){
@@ -193,6 +206,10 @@
     m('bevel',0x425044,0,.938,.08,.96,.129,.65,desk,0,'cloth');
     const register=textCard(desk,0,1.012,.08,.88,.58,'ORIGINAL REGISTER','W07   ·   E12');
     register.rotation.x=-Math.PI/2;
+    for(const [x,yaw] of [[-.40,-.16],[.42,.12]]){
+      const leaf=textCard(desk,x,.992,.42,.31,.45,x<0?'W07':'E12',x<0?'CHIPPED RIM':'BLUE TILE');
+      leaf.rotation.set(-Math.PI/2,0,yaw);
+    }
     textCard(desk,0,.690,.647,1.04,.19,'ACCESSION DESK');
     person(-1.37,-.79,{coat:0x8c602f,yaw:.58,pose:'give',bag:true});
     block(-1.37,-.79,.49,.48);

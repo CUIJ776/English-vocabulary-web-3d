@@ -11,7 +11,7 @@ const scenes = readdirSync(new URL(sceneFolder, import.meta.url))
 if (scenes.length !== 16) throw new Error('Four scene images per story are required.');
 const styles = ['style.css', 'assets/motion/motion.css', 'book.css', 'catalog.css', 'world.css'];
 const scripts = ['assets/motion/motion.js', 'book.js', 'assets/vendor/three.min.js', 'world-art.js', 'world-craft.js', 'world-garden.js',
-  'world-lighthouse.js', 'world-station.js', 'world-museum.js', 'scene-3d.js', 'lesson.js', 'episodes.js', 'app.js'];
+  'world-lighthouse.js', 'world-station.js', 'world-museum.js', 'world-study.js', 'scene-3d.js', 'lesson.js', 'episodes.js', 'app.js'];
 const media = {
   'assets/bookshelf-cover.jpg': 'image/jpeg',
   'assets/lighthouse-popup.png': 'image/png',

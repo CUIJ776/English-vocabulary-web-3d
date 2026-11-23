@@ -67,7 +67,7 @@
     const bounce = new T.DirectionalLight(0x8ab4df,.49);
     bounce.position.set(4,4,-10);
     scene.add(bounce);
-    if (ground !== null) box(0,-.16,0,108,.3,108,ground,scene,0,'ground');
+    if (ground !== null) box(0,-.16,0,108,.3,108,ground,scene,0,'terrain');
   }
   function group(x,y,z,parent = scene) {
     const result = new T.Group();
@@ -276,12 +276,17 @@
     bevel(w*.245,h*1.45,-d*.17,.34,.76,.35,0x866048,house,'stone');
     const front = d/2;
     bevel(0,.61,front+.025,.65,1.26,.061,0x4a3427,house,'wood');
+    for(const x0 of [-.34,.34]) bevel(x0,.62,front+.065,.073,1.28,.085,0x836548,house,'wood');
+    bevel(0,1.265,front+.079,.80,.092,.15,0x8d745a,house,'wood');
+    bevel(0,.074,front+.17,.86,.15,.44,0x887c69,house,'stone');
+    for(const y0 of [.35,.93]) bevel(-.19,y0,front+.066,.24,.046,.024,0x50483c,house,'metal');
     box(.22,.67,front+.049,.034,.034,.04,0xd0a471,house);
     for (const sign of [-1,1]) {
       box(sign*w*.3,1.31,front+.019,.55,.65,.08,0x67604c,house);
       box(sign*w*.3,1.31,front+.066,.46,.55,.02,0xffc879,house,.59);
       box(sign*w*.3,1.31,front+.085,.032,.56,.026,0x765c43,house);
       box(sign*w*.3,1.31,front+.088,.48,.037,.027,0x765c43,house);
+      for(const edge of [-1,1]) bevel(sign*w*.3+edge*.30,1.31,front+.079,.081,.70,.078,0x675844,house,'wood');
       bevel(sign*w*.3,.989,front+.13,.68,.11,.25,0x786753,house,'stone');
       for(let leaf=0;leaf<11;leaf++){
         const yy=.38+leaf*.172;
@@ -540,6 +545,21 @@
     spawn = [0,1.67,5.25]; look = [.1,1.60,-8.2];
     bounds[0] = -3.14; bounds[1]=3.14; bounds[2] = -2.15;
     obstacles.push([-1.79,-1.03,-.15,.65],[-2.67,-1.92,-.47,.35]);
+  }
+  for(const sign of [-1,1]) {
+    const x=sign*(act===3?2.62:1.48);
+    if(act===1 || act===3) {
+      for(const z of act===1?[-.92,1.10]:[-1.75,1.76]) {
+        const post=group(x,0,z);
+        cylinder(0,.34,0,.065,.66,0x786247,post,'wood');
+        bevel(0,.65,0,.17,.087,.17,0xa48d68,post,'wood');
+        const band=shape(new T.TorusGeometry(.072,.014,6,16),0xb6a181,0,.51,0,1,1,1,post,0,'cloth');
+        band.rotation.x=Math.PI/2;
+      }
+      const [a,b]=act===1?[-.92,1.10]:[-1.75,1.76];
+      curve(scene,[[x,.52,a],[x,.34,(a+b)/2],[x,.52,b]],.017,0xad9870,'cloth');
+      obstacles.push([x-.13,x+.13,a-.10,b+.10]);
+    }
   }
   addInstances();
   return {spawn, look, bounds, obstacles, animate(time) { for (const update of animations) update(time); }};

@@ -123,6 +123,13 @@ function worldCraft(T,scene,seed) {
       ell(root,skin,hand[0]-s*.034,hand[1]+.012,hand[2]+.012,.022,.036,.024);
       const pocket=mesh('bevel',dark,s*.122,body-.126,.116,.097,.119,.042,root,0,fabric);
       pocket.rotation.z=s*.16;
+      const flap=mesh('bevel',trim,s*.124,body-.084,.142,.107,.027,.031,root,0,fabric);
+      flap.rotation.z=s*.16;
+      ell(root,kit==='shell'?0x7d8581:0xb58d58,s*.121,body-.094,.158,.011,.011,.006,'metal');
+      for(let lace=0;lace<3;lace++) {
+        const stitch=ell(root,0x776c53,x0,.153-lace*.007,ankle[2]+.104+lace*.027,.035,.0045,.009,'cloth');
+        stitch.rotation.y=lace%2?.38:-.38;
+      }
     }
     const face=new T.Group();
     face.name='face';
@@ -184,6 +191,8 @@ function worldCraft(T,scene,seed) {
     if(bag){
       if(kit==='shell'){
         mesh('bevel',0x3b413b,0,body-.038,-.208,.345,.42,.198,root,0,'cloth');
+        mesh('bevel',0x516055,0,body-.076,-.313,.23,.22,.053,root,0,'cloth');
+        curve(root,[[-.114,body+.031,-.336],[0,body+.060,-.344],[.114,body+.031,-.336]],.008,0xb4a48b,'cloth');
         for(const s of [-1,1]) curve(root,[[s*.13,body+.22,-.086],[s*.151,body+.167,.126],[s*.142,body-.17,.151]],.024,0x444545,'cloth');
       } else {
         mesh('bevel',0x616748,-.232,body-.14,.058,.25,.245,.133,root,0,'cloth').rotation.z=-.15;

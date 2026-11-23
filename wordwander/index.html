@@ -152,6 +152,7 @@
           <button id="world-notes" type="button" aria-expanded="false" hidden>查看剧情与答题</button>
           <button id="world-expand" type="button" aria-pressed="false">全屏漫游</button>
         </div>
+        <button id="world-exhibit" class="world-exhibit" type="button" aria-haspopup="dialog" aria-controls="exhibit-dialog" hidden>查看英文线索</button>
         <p class="world-keyboard" id="world-keyboard">点击场景后，WASD 移动 · 拖动看四周</p>
         <div class="world-dpad" aria-label="移动方向">
           <button type="button" class="world-up" data-move="KeyW" aria-label="前进">↑</button>
@@ -172,6 +173,14 @@
     </div></div></div>
     <footer><span id="save-status">各篇故事的进度仅保存在此浏览器<span class="book-en" lang="en">Story progress is saved in this browser only.</span></span><span>钢琴配乐<span class="book-en" lang="en">Piano soundtrack · <a href="https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100163">Meditation Impromptu 01 · Kevin MacLeod</a> · <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a></span></span></footer>
   </main>
+  <dialog class="notebook exhibit-dialog" id="exhibit-dialog" aria-labelledby="exhibit-title">
+    <div class="modal-header"><h2 id="exhibit-title"></h2><button class="icon-button" type="button" data-close="exhibit-dialog" aria-label="关闭线索">×</button></div>
+    <p class="exhibit-title-en" id="exhibit-title-en" lang="en"></p>
+    <p class="exhibit-evidence" id="exhibit-evidence" lang="en"></p>
+    <details id="exhibit-translation"><summary>查看线索中文</summary><p></p></details>
+    <div class="exhibit-words" id="exhibit-words"></div>
+    <button class="primary" id="exhibit-continue" type="button">回到剧情与答题</button>
+  </dialog>
   <dialog class="notebook" id="notebook"><div class="modal-header"><h2>你的单词手帐</h2><button class="icon-button" data-close="notebook" aria-label="关闭单词手帐">×</button></div><p>在故事里遇见的词，会留在这里。点朗读，再听一遍。</p><div class="word-list" id="word-list"></div></dialog>
   <dialog class="notebook" id="settings"><div class="modal-header"><h2>声音与学习设置</h2><button class="icon-button" data-close="settings" aria-label="关闭设置">×</button></div><label class="settings-row">英文声音<select id="voice-select"><option value="">内置英文录音</option></select></label><label class="settings-row">朗读速度<select id="rate-select"><option value="0.75">慢一点 · 0.75×</option><option value="0.9" selected>舒缓 · 0.9×</option><option value="1">自然 · 1×</option></select></label><label class="settings-row">进入剧情时自动朗读<input type="checkbox" id="auto-read"></label><p id="voice-note">内置美式英语录音可以离线播放。也可切换到设备提供的英文语音。</p><button class="secondary" id="test-voice">试听一句英文</button><label class="settings-row">轻音乐音量<input id="music-volume" type="range" min="0" max="100" value="22" aria-label="轻音乐音量"></label><hr><button class="quiet" id="restart-button">重新开始这段故事</button></dialog>
   <dialog class="notebook" id="restart-dialog"><h2>重新开始这段故事？</h2><p>这会清除本次答题与进度，声音设置会保留。</p><div class="summary-actions"><button class="secondary" data-close="restart-dialog">保留进度</button><button class="primary" id="confirm-restart">重新开始</button></div></dialog>
@@ -186,6 +195,7 @@
   <script src="world-lighthouse.js"></script>
   <script src="world-station.js"></script>
   <script src="world-museum.js"></script>
+  <script src="world-study.js"></script>
   <script src="scene-3d.js"></script>
   <script src="lesson.js"></script><script src="episodes.js"></script><script src="assets/audio.js"></script><script src="app.js"></script>
 </body>

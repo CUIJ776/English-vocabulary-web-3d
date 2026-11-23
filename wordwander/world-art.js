@@ -1,4 +1,4 @@
-/* Repeatable surface maps and light rigs for the three story worlds. */
+/* Repeatable surface maps and light rigs for the story worlds. */
 function worldArt(T, scene) {
   const maps = new Map();
   const materials = new Map();
@@ -12,7 +12,7 @@ function worldArt(T, scene) {
     const context = canvas.getContext('2d');
     const image = context.createImageData(128,128);
     const rnd = random(kind.charCodeAt(0)*1973);
-    const fields=[4,8,16,32].map(n=>({n,values:Array.from({length:n*n},rnd)}));
+    const fields=[4,8,16,32,64].map(n=>({n,values:Array.from({length:n*n},rnd)}));
     function noise({n,values},x,y) {
       const u=x*n/128,v=y*n/128, i=Math.floor(u),j=Math.floor(v);
       const a=u-i,b=v-j,s=a*a*(3-2*a),t=b*b*(3-2*b);
@@ -22,14 +22,21 @@ function worldArt(T, scene) {
     }
     for (let y=0;y<128;y++) for (let x=0;x<128;x++) {
       const phase = x/128*Math.PI*2, height = y/128*Math.PI*2;
-      const haze=fields.reduce((sum,field,i)=>sum+noise(field,x,y)*[1,.58,.31,.16][i],0);
-      let tone = 238 + (rnd()-.5)*16 + 14*haze;
-      if (kind==='stone' || kind==='ground') tone += haze*29 - rnd()*14;
+      const haze=fields.reduce((sum,field,i)=>sum+noise(field,x,y)*[1,.58,.31,.16,.09][i],0);
+      let tone = 239 + (rnd()-.5)*12 + 15*haze;
+      if (kind==='stone' || kind==='ground' || kind==='terrain') {
+        const seam=Math.abs(Math.sin(phase*2+1.6*Math.sin(height)+haze*2.8));
+        tone+=haze*37-rnd()*12-(1-T.MathUtils.smoothstep(seam,0,.14))*12;
+      }
       if (kind==='wood' || kind==='bark') {
         const grain = kind==='bark' ? phase : height;
         const twist = kind==='bark' ? height : phase;
-        tone -= Math.pow(.5+.5*Math.sin(grain*22 + .7*Math.sin(twist*2) + 2.4*haze),5)*38;
+        const bend=Math.exp(-3*(1-Math.cos(grain-3.2))-.9*(1-Math.cos(twist-1.8)));
+        tone-=Math.pow(.5+.5*Math.sin(grain*22 + .7*Math.sin(twist*2) + bend*4 + 2.4*haze),5)*38;
+        tone-=Math.pow(.5+.5*Math.sin(grain*53 + bend*2 + .76*haze),11)*10;
       }
+      if (kind==='metal') tone+=5*Math.sin(height*44)+haze*15;
+      if (kind==='glaze') tone+=7*Math.sin(phase*3+height*2)+haze*7;
       if (kind==='cloth' || kind==='fur') {
         tone -= kind==='fur' ? (1+Math.sin(phase*32+.7*Math.sin(height*5)+haze*2.3))*6 :
           8*(1+Math.sin(phase*32)*Math.sin(height*32));
@@ -43,6 +50,7 @@ function worldArt(T, scene) {
     color.colorSpace=T.SRGBColorSpace;
     color.wrapS=color.wrapT=T.RepeatWrapping;
     color.anisotropy=4;
+    if (kind==='terrain') color.repeat.set(16,16);
     const height = color.clone();
     height.colorSpace=T.NoColorSpace;
     maps.set(kind,{color,height});
@@ -59,7 +67,7 @@ function worldArt(T, scene) {
       roughness:shiny ? kind==='water' ? .24 : .39 : cloth ? .98 : .84,
       metalness:kind==='metal' ? .36 : 0,
       map:texture?.color ?? null, bumpMap:texture?.height ?? null,
-      bumpScale:kind==='stone' || kind==='ground' ? .048 : kind==='bark' ? .042 : .018,
+      bumpScale:['stone','ground','terrain'].includes(kind) ? .044 : kind==='bark' ? .042 : shiny ? .009 : .018,
       side:kind==='leaf'?T.DoubleSide:T.FrontSide,
       emissive:glow ? tint : 0, emissiveIntensity:glow
     });

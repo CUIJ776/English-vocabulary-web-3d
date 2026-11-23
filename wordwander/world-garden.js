@@ -8,7 +8,7 @@
   k.light(act===3?0xe8c4a1:0xc1d2c1,0x4b5136,.024,act===3?0xffba83:0xffdfaa,2.55,[-6,9,-4]);
   art.key(0xffe0bd,1.48,[3.5,5,8],[0,1,-1],false);
   art.sky({top:0x8fb8c6,horizon:act===3?0xf4d5ad:0xe8e4c3,cloud:0xfff2ce,shade:0x9fac9a,cover:.47,glow:act===3?.32:.14});
-  m('box',0x464728,0,-.19,0,56,.36,62,scene,0,'ground');
+  m('box',0x464728,0,-.19,0,56,.36,62,scene,0,'terrain');
   function block(x,z,w,d) { obstacles.push([x-w/2,x+w/2,z-d/2,z+d/2]); }
   function rock(x,z,scale) {
     b('stone',choose(stone),x,scale*.24-.025,z,scale,scale*.53,scale*.76,r(0,1),r(0,6));
@@ -227,6 +227,31 @@
     kitten(.05,.23,.42,.73).position.y=.66;
     block(-.76,-.28,.52,.48);block(0,.01,.47,.44);block(.77,-.36,.55,.49);
     look=[0,1.14,-2.4];spawn=[.08,1.65,3.65];
+  }
+  for(const side of [-1,1]) for(let i=0;i<32;i++) {
+    const z=7.5-i*.45;
+    const x=side*(1.46+.17*Math.sin(z*.24)) + r(-.07,.07);
+    b('bevel',choose(stone),x,.042,z,r(.17,.24),r(.09,.135),r(.33,.45),0,r(-.16,.16),0,'stone');
+    for(let flake=0;flake<4;flake++) b('stone',choose(stone),x-side*r(.08,.32),.018,z+r(-.2,.2),
+      r(.025,.060),r(.014,.028),r(.032,.064),0,r(0,6));
+  }
+  for(const [x,z,tint] of [[-1.83,.75,0xe9b876],[1.98,-1.22,0xf0d4a1]]) {
+    const insect=group(x,.49,z);
+    m('globe',0x4b4232,0,0,0,.012,.019,.064,insect);
+    const wings=[-1,1].map(side=>{
+      const hinge=new T.Group();
+      insect.add(hinge);
+      for(const [front,span,depth] of [[.036,.071,.079],[-.039,.049,.055]]) {
+        const wing=m('leaf',tint,side*span*.66,.004,front,span,depth,.018,hinge);
+        wing.rotation.set(-Math.PI/2,0,side*.43);
+      }
+      return hinge;
+    });
+    motion.push(time=>{
+      insect.position.set(x+Math.sin(time*.63+x)*.27,.54+Math.sin(time*1.53+x)*.17,z+Math.cos(time*.74)*.29);
+      insect.rotation.y=time*.66+x;
+      wings.forEach((hinge,index)=>hinge.rotation.z=(index?1:-1)*(.27+Math.sin(time*15+x)*.69));
+    });
   }
   k.finish();
   return {spawn,look,bounds:[-6.4,6.4,-14,10],obstacles,animate(t){motion.forEach(update=>update(t));}};

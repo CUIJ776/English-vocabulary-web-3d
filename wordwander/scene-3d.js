@@ -6,6 +6,7 @@ const storyScene3d = (() => {
   const expand = document.getElementById('world-expand');
   const reset = document.getElementById('world-reset');
   const notes = document.getElementById('world-notes');
+  const exhibitButton = document.getElementById('world-exhibit');
   const reading = document.querySelector('.reading-page');
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   const keys = new Set();
@@ -14,6 +15,7 @@ const storyScene3d = (() => {
   const speed = 3.15;
   let renderer, world, crossfade, mixer, animationFrame = 0, last = 0;
   let pointer, immersive = false, notesOpen = false, failed = false, inView = true;
+  const exhibitPosition = T && new T.Vector3();
 
   function initRenderer() {
     if (renderer) return true;
@@ -39,11 +41,12 @@ const storyScene3d = (() => {
     const camera = new T.PerspectiveCamera(58, 1, .08, 130);
     camera.rotation.order = 'YXZ';
     const settings = window.WW_WORLDS[episode]({T, scene}, act);
+    const exhibit = worldStudy.build(T,scene,episode,act,settings);
     const [x,y,z] = settings.spawn;
     const [lx,ly,lz] = settings.look;
     const yaw = Math.atan2(x-lx, z-lz);
     const pitch = Math.atan2(ly-y, Math.hypot(lx-x,lz-z));
-    return {episode, act, scene, camera, ...settings, x, y, z, yaw, pitch,
+    return {episode, act, scene, camera, exhibit, ...settings, x, y, z, yaw, pitch,
       targetYaw:yaw, targetPitch:pitch, vx:0, vz:0, clock:0, origin:{x,y,z,yaw,pitch}};
   }
 
@@ -147,6 +150,16 @@ const storyScene3d = (() => {
     if (world) poseCamera(world);
   }
 
+  function placeExhibitButton() {
+    const {camera,exhibit} = world;
+    const point=exhibit.anchor.getWorldPosition(exhibitPosition).project(camera);
+    const visible=!crossfade && point.z>-1 && point.z<1 && Math.abs(point.x)<.98 && Math.abs(point.y)<.90;
+    exhibitButton.hidden=!visible;
+    if (!visible) return;
+    exhibitButton.style.left=`${Math.round(T.MathUtils.clamp((point.x+1)*canvas.clientWidth*.5,64,canvas.clientWidth-64))}px`;
+    exhibitButton.style.top=`${Math.round((1-point.y)*canvas.clientHeight*.5)}px`;
+  }
+
   function draw(time) {
     animationFrame = 0;
     if (!world || canvas.hidden || document.hidden || (!inView && !immersive)) return;
@@ -172,6 +185,7 @@ const storyScene3d = (() => {
       move(dt);
       renderer.render(world.scene,world.camera);
     }
+    placeExhibitButton();
     animationFrame = requestAnimationFrame(draw);
   }
 
@@ -190,6 +204,8 @@ const storyScene3d = (() => {
   }
 
   function setNotes(open, focus = false) {
+    const exhibitDialog=document.getElementById('exhibit-dialog');
+    if (!open && exhibitDialog.open && exhibitDialog.classList.contains('exhibit-side')) exhibitDialog.close();
     notesOpen = open;
     document.body.classList.toggle('world-notes-open', immersive && open);
     reading.inert = immersive && !open;
@@ -233,6 +249,8 @@ const storyScene3d = (() => {
     endTransition();
     const old = world;
     world = next;
+    exhibitButton.hidden=true;
+    exhibitButton.setAttribute('aria-label',`查看英文线索：${next.exhibit.name}`);
     canvas.hidden = false;
     controls.hidden = false;
     frame.setAttribute('data-scene-world','');
@@ -260,6 +278,7 @@ const storyScene3d = (() => {
     world = undefined;
     canvas.hidden = true;
     controls.hidden = true;
+    exhibitButton.hidden = true;
     clearInput();
     setImmersive(false,false);
     frame.removeAttribute('data-scene-world');
@@ -342,5 +361,5 @@ const storyScene3d = (() => {
     inView = entry.isIntersecting;
     if (world && inView) run();
   }).observe(frame);
-  return {show,stop};
+  return {show,stop,getExhibit:()=>world?.exhibit,openNotes:()=>{ if (immersive) setNotes(true); }};
 })();

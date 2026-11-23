@@ -126,7 +126,7 @@
     art.sky(act===0?
       {top:0x25384a,horizon:0x778b9e,cloud:0x69758a,shade:0x222d3e,cover:.28,density:1.08,glow:.03}:
       {top:0x7792b0,horizon:0xefad76,cloud:0xffdaac,shade:0x68788f,cover:.43,glow:.44,sun:.36});
-    m('box',0x5b5f5d,0,-.21,0,52,.40,60,scene,0,'ground');
+    m('box',0x5b5f5d,0,-.21,0,52,.40,60,scene,0,'terrain');
     mountainRidge(-34,22,act===0?12:8.5,act===0?0x536579:0x697889,2.1);
     mountainRidge(-25,15,act===0?7.5:5.1,act===0?0x414f64:0x6a7784,.7);
     for(let i=0;i<23;i++) {
@@ -260,6 +260,63 @@
       const x=sign*(3.55+i*.51),z=-6.15;
       m('box',choose(slate),x,1.13,z,.29,.34,.33);
       m('box',0x293e45,x,1.15,z+.172,.22,.12,.025);
+    }
+  }
+  if (outside) {
+    for(let patch=0;patch<60;patch++){
+      const x=(patch%2?1:-1)*r(1.75,10.9),z=r(-11,8);
+      for(let i=0;i<5;i++){
+        const blade=choose([0x697568,0x657162,0x596a61,0x76796a]);
+        b('leaf',blade,x+r(-.30,.30),r(.04,.16),z+r(-.28,.28),r(.025,.051),r(.09,.19),.07,
+          r(-.40,.40),r(0,6),r(-.66,.66));
+      }
+      for(let i=0;i<3;i++)b('stone',choose(slate),x+r(-.35,.35),.02,z+r(-.32,.32),r(.035,.13),r(.018,.054),r(.051,.18),0,r(0,6));
+    }
+    const poolShape=new T.Shape();
+    for(let i=0;i<36;i++){
+      const angle=i*Math.PI/18;
+      const radius=1+.085*Math.sin(angle*3+.4)+.045*Math.sin(angle*7);
+      poolShape[i?'lineTo':'moveTo'](Math.cos(angle)*radius,Math.sin(angle)*radius);
+    }
+    poolShape.closePath();
+    const poolGeometry=new T.ShapeGeometry(poolShape);
+    const poolMaterial=new T.MeshStandardMaterial({color:act===0?0x536d7a:0x8d9387,roughness:.29,metalness:.22,
+      transparent:true,opacity:.74,depthWrite:false});
+    for(const [x,z,w,d] of [[-1.60,2.71,.81,.48],[1.32,-1.12,.94,.54],[-2.51,-3.65,.88,.45],[2.22,3.76,.66,.37]]){
+      const pool=new T.Mesh(poolGeometry,poolMaterial);
+      pool.rotation.x=-Math.PI/2;
+      pool.position.set(x,.027,z);
+      pool.scale.set(w,d,1);
+      scene.add(pool);
+      if (act===0) {
+        const ring=new T.Mesh(new T.RingGeometry(.84,1,32),new T.MeshBasicMaterial({color:0xabbec2,transparent:true,depthWrite:false}));
+        ring.position.set(x+.16,.030,z-.08);
+        ring.rotation.x=-Math.PI/2;
+        scene.add(ring);
+        const pulse=time=>{
+          const drop=(time*.95+x*.1+1)%1;
+          ring.scale.setScalar(.035+drop*.32);
+          ring.material.opacity=.33*(1-drop);
+        };
+        pulse(0);
+        anim.push(pulse);
+      }
+    }
+  } else {
+    for(const side of [-1,1]) for(let i=0;i<19;i++) {
+      const x=side*(2.48 + i%2*.25), z=2.42-i*.25;
+      b('box',i%2?0xbea370:0x555852,x,.022,z,.20,.007,.217,0,.29*side,0,'metal');
+    }
+    for(const [x,z] of [[-4.29,-.62],[4.32,-.62]]) {
+      const shelf=group(x,0,z);
+      for(const height of [.70,1.26,1.81])m('bevel',0x65716c,0,height,0,1.26,.072,.55,shelf,0,'metal');
+      for(const side of [-1,1])m('bevel',steel,side*.60,.94,0,.073,1.86,.53,shelf,0,'metal');
+      for(let row=0;row<3;row++) for(let col=0;col<3;col++){
+        const x0=-.40+.38*col, y=.85+row*.55;
+        m('bevel',choose(slate),x0,y,0,.32,.25,.42,shelf,0,'metal');
+        m('box',0xa4a58b,x0,y,.218,.17,.055,.009,shelf);
+      }
+      block(x,z,1.26,.56);
     }
   }
   k.finish();
