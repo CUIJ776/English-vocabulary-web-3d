@@ -21,6 +21,7 @@
 .shelf-hero .hero-english {font-family:var(--book-english)}
 .shelf-hero .hero-lead .book-en {color:#f7d99d;font-size:.57em}
 .shelf-hero .hero-details .book-en {padding:0;color:#f5ebd4}
+.shelf-hero .hero-details .book-zh {padding:0;color:inherit}
 .shelf-hero .hero-action {line-height:1.3}
 .book-turn-button .book-turn-icon {font:400 20px/1 var(--serif)}
 .book-turn-button .book-en {font:400 10px/1.15 var(--book-english)}
@@ -212,6 +213,7 @@ footer .book-en {font-size:.86em}
 }
 .catalog-spread[data-tone="lighthouse"] {--catalog-tint:#487175;--catalog-tag:#e2edeb}
 .catalog-spread[data-tone="station"] {--catalog-tint:#795734;--catalog-tag:#f4ead4}
+.catalog-spread[data-tone="museum"] {--catalog-tint:#4e5263;--catalog-tag:#e7e6f0}
 .catalog-cover-page,.catalog-detail-page {position:relative;min-width:0}
 .catalog-cover-page {
   display:block;

@@ -5,6 +5,7 @@ const music = $('music');
 const EMPTY = () => ({mode:'intro',i:0,learned:[],wrong:[],done:false,completed:false,lastPlayed:0});
 let lesson, state, chunks = [], playback, toastTimer, speaking = false;
 let currentScene;
+let preparedSpeech, narration, pendingSpeechButton, systemUtterance;
 let catalogIndex = initialCatalogIndex();
 let catalogSwipe, catalogTap, catalogTrigger = 'shelf-open';
 const coverScenes = {garden:1,lighthouse:0,station:3};
@@ -128,9 +129,64 @@ function art(episode, index) {
   return window.STORY_ART?.[name] || name;
 }
 function pauseSpeech() {
-  playback?.pause();
+  const audio = playback;
+  playback = undefined;
+  if (audio) {
+    audio.onplaying = audio.onended = audio.onerror = null;
+    audio.pause();
+    if (audio !== preparedSpeech?.audio) {
+      audio.removeAttribute('src');
+      audio.load();
+    }
+  }
+  systemUtterance = undefined;
   window.speechSynthesis?.cancel();
+  restoreSpeechButton();
   setSpeaking(false);
+}
+function restoreSpeechButton() {
+  if (!pendingSpeechButton) return;
+  const {button,label}=pendingSpeechButton;
+  button.textContent=label;
+  button.removeAttribute('aria-busy');
+  pendingSpeechButton=undefined;
+}
+function clearPreparedSpeech() {
+  if (!preparedSpeech) return;
+  const {controller,audio,objectUrl}=preparedSpeech;
+  preparedSpeech=undefined;
+  controller.abort();
+  if (audio === playback && audio) pauseSpeech();
+  else if (audio) {
+    audio.removeAttribute('src');
+    audio.load();
+  }
+  if (objectUrl) URL.revokeObjectURL(objectUrl);
+}
+const spokenText = text => text.replace(/____/g,'blank');
+function bindNarration(button,text) {
+  narration={button,text};
+  button.onclick=()=>speak(text,button);
+  prepareNarration();
+}
+function prepareNarration() {
+  const content=narration && spokenText(narration.text);
+  const url=content && !$('voice-select').value && window.STORY_AUDIO_URLS?.[content];
+  if (url && preparedSpeech?.url===url) return;
+  clearPreparedSpeech();
+  if (!url) return;
+  const slot={url,controller:new AbortController()};
+  preparedSpeech=slot;
+  fetch(url,{signal:slot.controller.signal}).then(response=>{
+    if (!response.ok) throw new Error('Recording unavailable');
+    return response.blob();
+  }).then(blob=>{
+    if (preparedSpeech !== slot || slot.controller.signal.aborted) return;
+    slot.objectUrl=URL.createObjectURL(blob);
+    slot.audio=new Audio(slot.objectUrl);
+    slot.audio.preload='auto';
+    slot.audio.load();
+  }).catch(()=>{ /* A click can retry loading the recording directly. */ });
 }
 function renderShelf() {
   const covers = $('story-shelf');
@@ -155,6 +211,8 @@ function renderShelf() {
 }
 function showLibrary(view, focusId) {
   pauseSpeech();
+  narration=undefined;
+  clearPreparedSpeech();
   bookView.clearPageTurn();
   bookView.clearCatalogMotion();
   storyScene3d.stop();
@@ -236,6 +294,7 @@ function saveSettings() {
   write('wordwander-voice', settings);
 }
 for (const id of ['rate-select','auto-read','voice-select','music-volume']) $(id).addEventListener('change', saveSettings);
+$('voice-select').addEventListener('change', () => { pauseSpeech(); prepareNarration(); });
 $('music-volume').addEventListener('input', updateVolume);
 updateVolume();
 function updateMusic() {
@@ -262,28 +321,49 @@ if (window.speechSynthesis) {
   speechSynthesis.addEventListener('voiceschanged', loadVoices);
   loadVoices();
 }
-function speak(text) {
-  const content = text.replace(/____/g, 'blank');
+function speak(text, button) {
+  const content = spokenText(text);
   const clip = window.STORY_AUDIO?.[content];
+  const url = window.STORY_AUDIO_URLS?.[content];
   pauseSpeech();
-  setSpeaking(true);
-  if (clip && !$('voice-select').value) {
-    const audio = new Audio('data:audio/wav;base64,' + clip);
+  if ((clip || url) && !$('voice-select').value) {
+    const slot=url && preparedSpeech?.url===url ? preparedSpeech : undefined;
+    // Call play within the click gesture, including on Safari when the fetch is still pending.
+    if (slot && !slot.audio) {
+      slot.controller.abort();
+      slot.audio=new Audio(url);
+    }
+    const audio = slot?.audio ?? new Audio(url || 'data:audio/wav;base64,' + clip);
     playback = audio;
     audio.playbackRate = Number($('rate-select').value) / .9;
-    const restore = () => { if (playback === audio) setSpeaking(false); };
-    audio.addEventListener('ended', restore, {once:true});
-    audio.play().catch(() => { restore(); toast('音频未能播放，请再次点击朗读。'); });
+    if (audio.readyState) audio.currentTime=0;
+    if (url && button && audio.readyState < 3) {
+      pendingSpeechButton={button,label:button.textContent};
+      button.textContent='正在准备朗读';
+      button.setAttribute('aria-busy','true');
+    }
+    audio.onplaying=()=>{restoreSpeechButton();setSpeaking(true);};
+    audio.onended=()=>{restoreSpeechButton();setSpeaking(false);};
+    const failed=()=>{
+      if (playback!==audio) return;
+      pauseSpeech();
+      if (slot) clearPreparedSpeech();
+      toast('音频未能播放，请再次点击朗读。');
+    };
+    audio.onerror=failed;
+    audio.play().catch(failed);
     return;
   }
   if (!window.speechSynthesis) { setSpeaking(false); toast('当前设备未提供可用的英文语音。'); return; }
   const utterance = new SpeechSynthesisUtterance(content);
+  systemUtterance=utterance;
+  setSpeaking(true);
   const selected = speechSynthesis.getVoices().find(v => v.name === $('voice-select').value);
   if (selected) utterance.voice = selected;
   utterance.lang = selected?.lang || 'en-US';
   utterance.rate = Number($('rate-select').value);
-  utterance.onend = () => setSpeaking(false);
-  utterance.onerror = e => { if (!['canceled','interrupted'].includes(e.error)) { setSpeaking(false); toast('无法播放系统语音，请切换到内置英文录音。'); } };
+  utterance.onend = () => { if (systemUtterance===utterance) setSpeaking(false); };
+  utterance.onerror = e => { if (systemUtterance===utterance && !['canceled','interrupted'].includes(e.error)) { setSpeaking(false); toast('无法播放系统语音，请切换到内置英文录音。'); } };
   speechSynthesis.speak(utterance);
 }
 function setScene(scene) {
@@ -325,7 +405,7 @@ function render() {
   $('learning-panel').classList.toggle('summary', state.mode === 'summary');
   if (state.mode === 'intro') {
     $('story-copy').innerHTML = `<p class="speaker">${lesson.level} · 第一幕</p><p class="english-line" lang="en">${lesson.preview}</p><p class="narrative">${lesson.description}</p><button class="text-button" id="preview-read">▷ 听一句开场</button>`;
-    $('preview-read').onclick = () => speak(lesson.preview);
+    bindNarration($('preview-read'),lesson.preview);
     const instructions = lesson.id === 'museum'
       ? '读英文线索，比较照片、实物和登记册。先判断证据能证明什么，再完成句子排序。最后用英文语境复习。'
       : '读懂线索后选择词义，用词块拼出英语句子。结尾会用新情境复习这 8 个单词。';
@@ -336,6 +416,8 @@ function render() {
   else renderQuestion(q, scene);
 }
 function renderSummary() {
+  narration=undefined;
+  clearPreparedSpeech();
   const missed = state.needsPractice ?? missedReview(lesson, state);
   const score = state.reviewScore ?? lesson.review.length-missedReview(lesson, state).length;
   const note = state.practiceResult === undefined ? '' : `<p class="practice-result" role="status">${missed.length ? `本轮重练：${state.practiceResult} 个词独立答对，还有 ${missed.length} 个词可再练。` : '本篇错词已全部独立答对。'}</p>`;
@@ -379,7 +461,7 @@ function renderQuestion(q, scene) {
     <p class="narrative">${q.narrative || '换一个情境，回想刚才学过的词。'}</p><p class="english-line" lang="en">${display}</p>
     <div class="audio-row"><button class="text-button" id="read">▷ 朗读英文</button>${q.translation?'<button class="text-button" id="translate">查看中文</button>':''}</div>
     <p class="translation" id="translation" hidden></p>`;
-  $('read').onclick = () => speak(line);
+  if (!state.done || (!review && q.type!=='order')) bindNarration($('read'),line);
   if ($('translate')) $('translate').onclick = () => {
     const translation = $('translation');
     translation.hidden = !translation.hidden;
@@ -483,13 +565,13 @@ function showAnswer(q) {
   if (q.type === 'order' || state.mode === 'review') {
     const full = q.line.replace('____', q.wordId || '');
     $('story-copy').querySelector('.english-line').textContent = full;
-    $('read').onclick = () => speak(full);
+    bindNarration($('read'),full);
   }
   const word = lesson.words.find(w => w.id === q.wordId);
   $('feedback').className = 'feedback success';
   $('feedback').tabIndex = -1;
   $('feedback').innerHTML = '<strong>✓ 答对了</strong><p>' + q.explanation + '</p>' + (word ? `<div class="word-reveal"><div class="word-head">${word.word} <small>${word.ipa}</small></div><p>${word.pos} ${word.meaning}</p><p>${word.collocation}</p><button class="text-button" id="read-word">▷ 听单词</button></div>` : '');
-  if (word) $('read-word').onclick = () => speak(word.word);
+  if (word) $('read-word').onclick = () => speak(word.word,$('read-word'));
   controls.querySelectorAll('button,input').forEach(b => b.disabled = true);
   $('next-button').disabled = false;
 }
@@ -508,7 +590,7 @@ $('next-button').onclick = () => {
   render();
   const next = ['story','review'].includes(state.mode) ? currentQuestion() : null;
   focusReading(state.mode === 'story' && oldScene !== next.scene);
-  if ($('auto-read').checked && next && next.type !== 'order') speak(next.line);
+  if ($('auto-read').checked && next && next.type !== 'order') speak(next.line,$('read'));
 };
 $('notebook-button').onclick = () => {
   const words = learnedWords();
@@ -520,7 +602,7 @@ $('settings-button').onclick = () => $('settings').showModal();
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => $(b.dataset.close).close());
 $('test-voice').onclick = () => speak('Every word opens a little world.');
 $('restart-button').onclick = () => { $('settings').close(); $('restart-dialog').showModal(); };
-$('confirm-restart').onclick = () => { state = EMPTY(); save(); $('restart-dialog').close(); render(); };
+$('confirm-restart').onclick = () => { pauseSpeech(); state = EMPTY(); save(); $('restart-dialog').close(); render(); };
 $('brand').onclick = e => { e.preventDefault(); showLibrary('shelf', 'shelf-title'); };
 $('story-tab').onclick = () => showLibrary('shelf', 'shelf-title');
 $('play-back').onclick = () => openCatalog();
