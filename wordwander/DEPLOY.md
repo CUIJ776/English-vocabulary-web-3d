@@ -2,6 +2,8 @@
 
 ## Cloudflare Pages
 
+线上地址为 [词间漫游](https://english-vocabulary-web-3d.pages.dev/)。
+
 将现有的 `CUIJ776/English-vocabulary-web-3d` 仓库连接到 Cloudflare Pages。生产分支选 `main`，框架选无框架，根目录填 `wordwander`，构建命令填 `node build.mjs --web`，输出目录填 `dist-web`。构建环境使用 Node.js 22。页面、3D 场景、音乐、朗读和字体都从静态文件提供。
 
 ## 本地修改
