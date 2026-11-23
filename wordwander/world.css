@@ -121,6 +121,25 @@ body.world-immersive {overflow:hidden}
   .world-immersive .scene[data-scene-world] .scene-label {max-width:calc(100% - 244px)}
   .world-immersive #play-area .reading-page {right:8px;top:auto;bottom:8px;width:calc(100% - 16px);max-height:61dvh;padding:15px}
 }
+@media (min-width:700px) and (any-pointer:coarse) {
+  .world-immersive.world-notes-open #play-area .play-grid {
+    display:grid;
+    grid-template-columns:minmax(0,1fr) clamp(296px,35vw,400px);
+    grid-template-rows:minmax(0,1fr);
+    align-items:stretch;
+  }
+  .world-immersive.world-notes-open #play-area .reading-page {
+    position:static;
+    width:auto;
+    max-height:none;
+    padding:16px;
+    border:0;
+    border-left:1px solid #cbbea1;
+    border-radius:0;
+    background:#fbf6e9;
+    box-shadow:none;
+  }
+}
 @media (max-width:375px) {
   .scene[data-scene-world] .scene-label {display:none}
 }
