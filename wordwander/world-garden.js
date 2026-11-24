@@ -300,7 +300,7 @@
     }
   }
   function xiaolin(x,z,options,clip) {
-    const original=person(x,z,{coat:0xbf8532,bag:true,...options});
+    const original=person(x,z,{coat:0xc29b44,bag:true,...options});
     cast.mount('xiaolin',clip,original);
   }
   function catActor(x,z,yaw,size,clip,support=0,y=0,zShift=0) {
@@ -319,9 +319,9 @@
     look=[-.18,1.28,-2];
   } else if(act===1) {
     bench(-1.23,-.82,.47);
-    catActor(-.45,.34,.56,1.20,'GroundIdle');
-    xiaolin(.62,.15,{yaw:-.61,pose:'crouch',scale:1.08},'Crouch');
-    block(.62,.15,.60,.51);
+    catActor(-.40,.39,.99,1.20,'GroundIdle');
+    xiaolin(.45,.16,{yaw:-1.0,pose:'crouch',scale:1.08},'Crouch');
+    block(.45,.16,.60,.51);
     bloom(-.88,1.08,.26,9);
     bloom(.97,-.12,.28,10);
     greenhouse(4.1,-9.2);
