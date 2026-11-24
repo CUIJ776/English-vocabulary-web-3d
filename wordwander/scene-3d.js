@@ -52,6 +52,7 @@ const storyScene3d = (() => {
 
   function disposeWorld(old) {
     if (!old) return;
+    old.dispose?.();
     const resources = new Set();
     old.scene.traverse(object => {
       object.shadow?.dispose();
@@ -64,7 +65,7 @@ const storyScene3d = (() => {
     });
     const background = old.scene.background;
     if (background?.isTexture) resources.add(background);
-    resources.forEach(resource => resource.dispose());
+    resources.forEach(resource => {if(!gardenActors.isShared(resource)) resource.dispose();});
   }
 
   function poseCamera(subject, glide = 0) {

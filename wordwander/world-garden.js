@@ -1,5 +1,6 @@
 (window.WW_WORLDS ||= {}).garden = function({T,scene},act) {
   const k=worldCraft(T,scene,383+act*87);
+  const cast=gardenActors.chapter(T);
   const {mesh:m,batch:b,range:r,choose,group,limb,curve,contact,person,art}=k;
   const obstacles=[], motion=[];
   const greens=[0x48632e,0x698344,0x2f492c,0x546b33,0x7c8b49];
@@ -187,14 +188,36 @@
   function basket(x,y,z) {
     const root=group(x,y,z);
     const wicker=0xaf8450;
-    m(new T.CylinderGeometry(.27,.21,.19,24),wicker,0,.095,0,1,1,1,root,0,'wood');
-    for(let band=0;band<7;band++) {
-      const rope=m(new T.TorusGeometry(.216+band*.008,.009,5,24),band%2?0xc89a60:0x937144,0,.022+band*.026,0,1,1,1,root);
+    const shell=new T.CylinderGeometry(.269,.211,.204,36,1,true);
+    m(shell,wicker,0,.106,0,1,1,1,root,0,'wood');
+    const inner=m(shell,0x80603d,0,.106,0,.993,1,.993,root,0,'wood');
+    inner.material=inner.material.clone();
+    inner.material.side=T.BackSide;
+    m(new T.CylinderGeometry(.211,.214,.027,36),wicker,0,.022,0,1,1,1,root,0,'wood');
+    for(let band=0;band<8;band++) {
+      const rope=m(new T.TorusGeometry(.214+band*.0079,.008,6,36),band%2?0xc89a60:0x937144,0,.020+band*.025,0,1,1,1,root);
       rope.rotation.x=Math.PI/2;
     }
-    m(new T.TorusGeometry(.235,.026,6,18,Math.PI),0xc59859,0,.175,0,1,1,1,root);
-    m('bevel',0x536b9e,.028,.182,.036,.39,.078,.38,root,0,'cloth').rotation.y=.18;
-    m('bevel',0x536b9e,.11,.114,.244,.26,.195,.079,root,0,'cloth').rotation.z=.26;
+    const lip=m(new T.TorusGeometry(.270,.012,8,44),0xc59859,0,.209,0,1,1,1,root);
+    lip.rotation.x=Math.PI/2;
+    m(new T.TorusGeometry(.241,.018,8,30,Math.PI),0xc59859,0,.184,-.028,1,1,1,root);
+    const blanket=new T.PlaneGeometry(.371,.52,19,27).rotateX(-Math.PI/2);
+    const point=blanket.attributes.position;
+    for(let i=0;i<point.count;i++) {
+      const x=point.getX(i),v=(point.getZ(i)+.26)/.52;
+      const rim=Math.sqrt(.28*.28-(x+.016)**2);
+      const over=T.MathUtils.smoothstep(v,.74,.89);
+      const drape=T.MathUtils.smoothstep(v,.89,1);
+      const z=T.MathUtils.lerp(-.188,rim-.020,Math.min(1,v/.74))+.059*over+.010*drape;
+      const fold=(.004+.008*drape)*Math.sin(x*63+z*9);
+      const corners=.029*T.MathUtils.smoothstep(Math.abs(x),.105,.185);
+      const crest=.062*T.MathUtils.smoothstep(v,.67,.80);
+      point.setXYZ(i,x+.016,.180+fold+corners+crest-.129*drape,z);
+    }
+    blanket.computeVertexNormals();
+    const linen=m(blanket,0x536c9b,0,0,0,1,1,1,root,0,'cloth');
+    linen.material=linen.material.clone();
+    linen.material.side=T.DoubleSide;
     return root;
   }
   function greenhouse(x,z) {
@@ -276,18 +299,28 @@
       b('box',0xa39171,side*7.5,.29,z,.074,.067,.64);
     }
   }
+  function xiaolin(x,z,options,clip) {
+    const original=person(x,z,{coat:0xbf8532,bag:true,...options});
+    cast.mount('xiaolin',clip,original);
+  }
+  function catActor(x,z,yaw,size,clip,support=0,y=0,zShift=0) {
+    const original=kitten(x,z,yaw,size);
+    original.position.y=support;
+    const scale=1/(size*.79);
+    cast.mount('kitten',clip,original,{scale,y:y*scale,z:zShift*scale});
+  }
   let look=[0,1.2,-3.7], spawn=[0,1.66,5.5];
   if(act===0) {
     gate(-1.68);
-    person(-1.04,2.54,{coat:0xbf8532,bag:true,yaw:.37,pose:'listen',scale:1.08});
+    xiaolin(-1.04,2.54,{yaw:.37,pose:'listen',scale:1.08},'Listen');
     block(-1.04,2.54,.54,.47);
     greenhouse(3.8,-10);
     bench(2.2,-3.4,-.15);
     look=[-.18,1.28,-2];
   } else if(act===1) {
     bench(-1.23,-.82,.47);
-    kitten(-.45,.34,.56,1.20);
-    person(.62,.15,{coat:0xbf8532,bag:true,yaw:-.61,pose:'crouch',scale:1.18});
+    catActor(-.45,.34,.56,1.20,'GroundIdle');
+    xiaolin(.62,.15,{yaw:-.61,pose:'crouch',scale:1.08},'Crouch');
     block(.62,.15,.60,.51);
     bloom(-.88,1.08,.26,9);
     bloom(.97,-.12,.28,10);
@@ -296,19 +329,19 @@
   } else if(act===2) {
     greenhouse(0,-6.5);
     person(-.62,-.02,{coat:0x9b8a74,yaw:.62,pose:'give',hat:true,scale:1.12,hair:0x8c8272});
-    person(.64,-.09,{coat:0xbf8532,bag:true,yaw:-.54,pose:'give',scale:1.08});
+    xiaolin(.64,-.09,{yaw:-.54,pose:'give',scale:1.08},'Offer');
     basket(0,.83,.22);
-    kitten(-.04,.22,.1,.56).position.y=.96;
+    catActor(-.032,.22,.06,.56,'BasketIdle',.96,.046,.020);
     m('bevel',0x79583e,0,.40,.19,.86,.77,.57,scene,0,'wood');
     block(0,.19,.86,.57);block(-.62,-.02,.49,.45);block(.64,-.09,.49,.45);
     spawn=[0,1.64,3.21];look=[0,1.13,-2.56];
   } else {
     tree(.6,-3.2,4.8,true);
     gate(-6.2);
-    person(-.76,-.28,{coat:0xbf8532,bag:true,yaw:.42,pose:'give',scale:1.06});
-    person(0,.01,{coat:0x516c97,scale:.82,yaw:.16,pose:'give',style:'boy'});
+    xiaolin(-.76,-.28,{yaw:.42,pose:'give',scale:1.06},'Offer');
+    person(0,.01,{coat:0x516c97,scale:.82,yaw:.16,pose:'cradle',style:'boy'});
     person(.77,-.36,{coat:0xccb098,scale:1.14,yaw:-.30,style:'mother'});
-    kitten(.05,.23,.42,.73).position.y=.66;
+    catActor(-.014,.27,1.37,.73,'HeldIdle',.68,.008,.020);
     block(-.76,-.28,.52,.48);block(0,.01,.47,.44);block(.77,-.36,.55,.49);
     look=[0,1.14,-2.4];spawn=[.08,1.65,3.65];
   }
@@ -352,5 +385,6 @@
     });
   }
   k.finish();
-  return {spawn,look,bounds:[-6.4,6.4,-14,10],obstacles,animate(t){k.animate(t);motion.forEach(update=>update(t));}};
+  return {spawn,look,bounds:[-6.4,6.4,-14,10],obstacles,dispose:cast.dispose,
+    animate(t,dt){k.animate(t);motion.forEach(update=>update(t));cast.animate(dt);}};
 };

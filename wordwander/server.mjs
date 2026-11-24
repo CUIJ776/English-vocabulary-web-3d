@@ -6,7 +6,7 @@ const web = process.argv.includes('--web');
 const root = fileURLToPath(new URL(web?'dist-web/':'dist/', import.meta.url));
 const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8',
   '.js':'text/javascript; charset=utf-8','.jpg':'image/jpeg','.png':'image/png',
-  '.woff2':'font/woff2','.ogg':'audio/ogg','.wav':'audio/wav'};
+  '.woff2':'font/woff2','.ogg':'audio/ogg','.wav':'audio/wav','.glb':'model/gltf-binary'};
 http.createServer(async (req,res) => {
   try {
     const pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);

@@ -83,7 +83,8 @@ function worldCraft(T,scene,seed) {
     pose='stand',hat=false,bag=false,style='girl',kit='coat'}={}) {
     const root=group(x,0,z,yaw);
     root.scale.setScalar(scale);
-    const crouch=pose==='crouch', reaches=['give','crouch','repair'].includes(pose);
+    const crouch=pose==='crouch', cradle=pose==='cradle';
+    const reaches=cradle || ['give','crouch','repair'].includes(pose);
     const body=crouch?.55:1.02;
     const fabric=kit==='shell'?'shell':'cloth';
     const dark=new T.Color(coat).multiplyScalar(.67).getHex();
@@ -118,8 +119,10 @@ function worldCraft(T,scene,seed) {
       ell(root,0x332d26,ankle[0],.028,ankle[2]+.065,.078,.028,.138,'leather');
       const shoulder=[s*.188,body+.136,-.015];
       const listen=pose==='listen' && s===1;
-      const elbow=[s*(reaches?.239:.253),body+(listen?.073:reaches?-.09:-.048),reaches?.15:.025];
+      const elbow=cradle?[s*.230,body-.139,.153]:
+        [s*(reaches?.239:.253),body+(listen?.073:reaches?-.09:-.048),reaches?.15:.025];
       const hand=listen?[.133,body+.403,.069]:
+        cradle?[s*.090,body-.079,.353]:
         [s*(reaches?.186:.236),body+(reaches?-.056:-.291),reaches?.327:.050];
       const middle=(a,b,t)=>a.map((v,i)=>T.MathUtils.lerp(v,b[i],t));
       const wrist=middle(elbow,hand,.90);
