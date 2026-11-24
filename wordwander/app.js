@@ -81,6 +81,7 @@ function initialCatalogIndex() {
 }
 function renderCatalog() {
   const episode = episodes[catalogIndex];
+  prepareWorldSurfaces(episode.id);
   const progress = getProgress(episode);
   const inProgress = ['story','review'].includes(progress.mode);
   const action = inProgress ? ['继续学习', 'Continue learning'] : progress.mode === 'summary' ?

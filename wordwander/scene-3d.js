@@ -58,6 +58,7 @@ const storyScene3d = (() => {
       if (object.geometry) resources.add(object.geometry);
       for (const material of [object.material].flat().filter(Boolean)) {
         Object.values(material).forEach(value => { if (value?.isTexture) resources.add(value); });
+        Object.values(material.uniforms ?? {}).forEach(({value})=>{ if(value?.isTexture) resources.add(value); });
         resources.add(material);
       }
     });
@@ -165,8 +166,10 @@ const storyScene3d = (() => {
     if (!world || canvas.hidden || document.hidden || (!inView && !immersive)) return;
     const dt = Math.min(.04,last ? (time-last)/1000 : 0);
     last = time;
-    world.clock += dt;
-    if (!motion.matches) world.animate?.(world.clock,dt);
+    if (!motion.matches) {
+      world.clock += dt;
+      world.animate?.(world.clock,dt);
+    }
     if (crossfade) {
       const progress = Math.min(1,(time-crossfade.start)/950);
       const eased = progress*progress*(3-2*progress);

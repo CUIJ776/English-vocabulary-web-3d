@@ -9,6 +9,7 @@
   const bevelShape = art.bevelBox();
   const softShape = new T.SphereGeometry(1, 22, 15);
   const stoneShape = art.crag(2);
+  const headlandShape = art.crag(1,true);
   const needleShape = art.leaf();
   const firBranchShape = new T.LatheGeometry([[.01,0],[.68,.055],[.65,.112],[.52,.26],[.36,.46],
     [.18,.71],[.008,1]].map(([r,y])=>new T.Vector2(r,y)),11).translate(0,-.5,0);
@@ -67,7 +68,7 @@
     const bounce = new T.DirectionalLight(0x8ab4df,.49);
     bounce.position.set(4,4,-10);
     scene.add(bounce);
-    if (ground !== null) box(0,-.16,0,108,.3,108,ground,scene,0,'terrain');
+    if (ground !== null) box(0,-.16,0,108,.3,108,ground,scene,0,'forest');
   }
   function group(x,y,z,parent = scene) {
     const result = new T.Group();
@@ -127,7 +128,7 @@
     for (let i = 0; i < 18; i++) {
       const angle = i * .36;
       const x = Math.sin(angle) * range(26,39), z = Math.cos(angle) * range(25,39);
-      scatter(stoneShape,pick([0x5b787f,0x54707a,0x667d84]),x,-1.4,z,range(4,12),range(1.1,5.3),range(3,8),angle);
+      scatter(headlandShape,pick([0x718081,0x647a7c,0x79909b]),x,-1.9,z,range(5.1,12.2),range(1.3,4.8),range(4.1,9.0),angle);
     }
   }
   function lantern(x,y,z,parent = scene) {
@@ -179,7 +180,33 @@
       ellipsoid(s*.201,.568,.299,.091,.081,.090,dark,root,'fur');
     }
     const head=group(0,1.109,.024,root);
-    ellipsoid(0,0,0,.32,.258,.226,badger?pale:color,head,'fur');
+    const skull=new T.SphereGeometry(1,44,30);
+    const contour=skull.attributes.position, colors=[];
+    const fur=new T.Color(color), cream=new T.Color(pale), markings=new T.Color(dark), paint=new T.Color();
+    for(let i=0;i<contour.count;i++) {
+      const x0=contour.getX(i),y0=contour.getY(i),z0=contour.getZ(i);
+      const forward=Math.max(0,z0);
+      const snout=Math.exp(-x0*x0*7.1-(y0+.38)**2*5)*forward**2;
+      const jaw=1-.18*Math.max(0,-y0);
+      contour.setXYZ(i,x0*.308*jaw,y0*.255,z0*.207+snout*.155);
+      const edge=-.17-.13*Math.cos(x0*5)+.037*Math.sin(x0*55+y0*61);
+      const paleFur=1-T.MathUtils.smoothstep(y0,edge-.08,edge+.08);
+      paint.copy(badger?cream:fur).lerp(cream,paleFur*forward);
+      if(badger){
+        const stripe=Math.exp(-((Math.abs(x0)-.43-y0*.14)**2)*31)*T.MathUtils.smoothstep(forward,.38,.83);
+        paint.lerp(markings,stripe*.99);
+      }
+      paint.multiplyScalar(.985+.093*Math.sin(x0*76+Math.sin(y0*30)*.28)*Math.sin(z0*31+y0*23));
+      colors.push(paint.r,paint.g,paint.b);
+    }
+    skull.computeVertexNormals();
+    skull.setAttribute('color',new T.Float32BufferAttribute(colors,3));
+    const furMat=material(0xffffff,0,'fur').clone();
+    furMat.vertexColors=true;
+    const face=new T.Mesh(skull,furMat);
+    face.castShadow=true;
+    face.receiveShadow=true;
+    head.add(face);
     const earOutline=new T.Shape();
     earOutline.moveTo(-.108,-.09);
     earOutline.bezierCurveTo(-.105,.050,-.063,.209,.018,.251);
@@ -188,37 +215,36 @@
     const earShape=new T.ExtrudeGeometry(earOutline,{depth:.037,bevelEnabled:true,bevelSize:.017,
       bevelThickness:.017,bevelSegments:2,curveSegments:8});
     const gaze=prop==='letter'?-.014:.009;
+    const eyes=[];
     for(const s of [-1,1]){
       if(badger){
         ellipsoid(s*.231,.193,-.041,.103,.107,.067,pale,head,'fur');
         ellipsoid(s*.238,.207,.019,.062,.071,.027,0x685851,head,'fur');
-        ellipsoid(s*.128,.031,.144,.086,.200,.087,dark,head,'fur').rotation.z=s*-.26;
-        shape(new T.TorusGeometry(.063,.007,6,20),0x866644,s*.109,.019,.252,1,.91,1,head,0,'metal');
+        shape(new T.TorusGeometry(.055,.005,7,24),0x866644,s*.106,.019,.237,1,.88,1,head,0,'metal');
       } else {
         const ear=group(s*.20,.174,-.047,head);
         ear.rotation.set(-.07,s*.23,s*-.23);
         shape(earShape,dark,0,0,0,s,1,1,ear,0,'fur');
         shape(earShape,color,0,-.011,.022,s*.91,.87,.78,ear,0,'fur');
-        shape(earShape,0xc98977,0,.004,.058,s*.61,.66,.41,ear,0,'fur');
-        ellipsoid(s*.162,-.078,.141,.169,.106,.123,pale,head,'fur').rotation.z=s*.20;
+        shape(earShape,0xb68172,0,.004,.058,s*.59,.65,.41,ear,0,'fur');
         for(let i=0;i<3;i++){
-          const tuft=ellipsoid(s*(.241+i*.018),-.065-i*.034,.107-i*.009,.089,.038,.064,i===0?color:pale,head,'fur');
+          const tuft=ellipsoid(s*(.224+i*.014),-.08-i*.035,.106-i*.010,.081,.028,.033,i===0?color:pale,head,'fur');
           tuft.rotation.z=s*(.44-i*.19);
         }
+        animations.push(t=>{ear.rotation.y=s*(.23+.043*Math.sin(t*1.43+x));});
       }
-      const eyeX=s*.114, eyeY=badger?.024:.046;
-      ellipsoid(eyeX,eyeY-.008,.197,.063,.079,.043,badger?dark:0x884b2c,head);
-      ellipsoid(eyeX,eyeY,.227,.046,.060,.027,0xffede0,head);
-      ellipsoid(eyeX+gaze,eyeY-.005,.249,.031,.042,.020,0x69452b,head,'glaze');
-      ellipsoid(eyeX+gaze,eyeY-.005,.263,.019,.029,.010,0x211e1b,head,'glaze');
-      ellipsoid(eyeX+gaze-.010,eyeY+.015,.272,.011,.013,.005,0xffeee0,head);
-      ellipsoid(eyeX,eyeY+.090,.201,.052,.012,.018,badger?dark:0x975329,head,'fur').rotation.z=s*-.26;
+      const eye=group(s*.103,badger?.027:.049,.204,head);
+      ellipsoid(0,0,0,.052,.043,.031,badger?dark:0x754820,eye,'fur');
+      ellipsoid(0,.001,.020,.037,.028,.018,0xdfc6ab,eye,'glaze');
+      ellipsoid(gaze*.67,0,.035,.023,.024,.010,0x9a6934,eye,'glaze');
+      ellipsoid(gaze*.67,-.001,.043,.012,.017,.006,0x231a16,eye,'glaze');
+      ellipsoid(gaze*.67-.005,.010,.049,.0055,.0055,.0020,0xffe7c6,eye);
+      eyes.push(eye);
     }
-    ellipsoid(0,-.108,.220,.153,.105,.145,pale,head,'fur');
-    ellipsoid(0,-.074,.337,.053,.039,.039,0x332821,head,'glaze');
-    ellipsoid(-.016,-.059,.365,.022,.010,.008,0x6d5543,head,'glaze');
-    curve(head,[[-.081,-.135,.312],[-.032,-.151,.350],[.031,-.150,.350],[.087,-.130,.309]],.0055,0x603627);
-    if(badger) curve(head,[[-.046,.025,.255],[0,.042,.259],[.046,.025,.255]],.0064,0x85643f,'metal');
+    ellipsoid(0,-.086,.341,.047,.030,.035,0x2f2520,head,'glaze');
+    ellipsoid(-.013,-.078,.365,.013,.006,.008,0x6d5543,head,'glaze');
+    curve(head,[[-.073,-.138,.293],[-.032,-.146,.329],[0,-.142,.341],[.032,-.146,.329],[.073,-.138,.293]],.0028,0x603627);
+    if(badger) curve(head,[[-.047,.025,.240],[0,.042,.249],[.047,.025,.240]],.0064,0x85643f,'metal');
     const scarf=badger?0x784149:0x586c32;
     for(let i=0;i<3;i++){
       const ring=shape(new T.TorusGeometry(.183+i*.018,.039,8,26),scarf,0,.848+i*.029,0,1,1,.93,root,0,'cloth');
@@ -260,7 +286,13 @@
       ellipsoid(.342,.841,.31,.079,.070,.074,dark,root,'fur');
       animations.push(t=>{hanging.rotation.z=Math.sin(t*2.7)*.12;});
     }
-    animations.push(t=>{head.rotation.z=Math.sin(t*1.12+x)*.05;});
+    animations.push(t=>{
+      const cycle=(t+Math.abs(x)*1.21)%4.73;
+      const blink=cycle<.19?Math.sin(cycle*Math.PI/.19):0;
+      for(const eye of eyes) eye.scale.y=1-.89*blink;
+      head.rotation.z=Math.sin(t*.71+x)*.035;
+      head.rotation.y=Math.sin(t*.47+x)*.045;
+    });
     return root;
   }
   function cottage(x,z,w,d,h,wall,roof) {
@@ -275,7 +307,7 @@
     shape(top,roof,0,h-.017,-d/2-.12,1,1,1,house,0,'stone');
     bevel(w*.245,h*1.45,-d*.17,.34,.76,.35,0x866048,house,'stone');
     const front = d/2;
-    bevel(0,.61,front+.025,.65,1.26,.061,0x4a3427,house,'wood');
+    bevel(0,.61,front+.025,.65,1.26,.061,0x9b7751,house,'boards');
     for(const x0 of [-.34,.34]) bevel(x0,.62,front+.065,.073,1.28,.085,0x836548,house,'wood');
     bevel(0,1.265,front+.079,.80,.092,.15,0x8d745a,house,'wood');
     bevel(0,.074,front+.17,.86,.15,.44,0x887c69,house,'stone');
@@ -319,6 +351,12 @@
     }
     cylinder(0,.11,0,1.69,.24,0x8b8d75,tower);
     cylinder(0,4.92,0,1.02,.18,0x52635e,tower);
+    const rail=shape(new T.TorusGeometry(.963,.026,7,42),0x697571,0,5.27,0,1,1,1,tower,0,'metal');
+    rail.rotation.x=Math.PI*.5;
+    for(let i=0;i<13;i++) {
+      const angle=i*Math.PI*2/13;
+      cylinder(Math.cos(angle)*.963,5.13,Math.sin(angle)*.963,.022,.29,0x657571,tower,'metal');
+    }
     shape(new T.CylinderGeometry(.65,.72,.70,12),0xffbd54,0,5.29,0,1,1,1,tower,1.15);
     shape(new T.ConeGeometry(.91,.53,12),0x4c625c,0,5.92,0,1,1,1,tower);
     ellipsoid(0,6.245,0,.063,.115,.063,0x78755b,tower);
@@ -344,35 +382,15 @@
     return tower;
   }
   function water(x,z,w,d,y,color) {
-    box(x,y-.09,z,w,.16,d,color,scene,0,'water');
-    const ripples = group(x,y,z);
-    const mesh = new T.InstancedMesh(boxShape,material(0xd8e8d1),95);
-    const dummy = new T.Object3D();
-    const swatches = act===3 ? [0xdca875,0x809caa,0xe2b584,0x637f89] : [0x779fa4,0x517e83,0x849b92,0x91ada9];
-    const flecks = [];
-    for (let i=0;i<mesh.count;i++) {
-      flecks.push([range(-w*.49,w*.49),range(-d*.49,d*.49),range(.15,Math.min(w*.17,1.28)),range(.024,.075),rand()*6.28]);
-      mesh.setColorAt(i,new T.Color(pick(swatches)));
-    }
-    function move(t) {
-      flecks.forEach(([fx,fz,l,b,phase],i) => {
-        dummy.position.set(fx+Math.sin(t*.7+phase)*.15,.015+Math.sin(t+phase)*.009,fz);
-        dummy.scale.set(l*(.78+(Math.sin(t*1.4+phase)+1)*.17),.012,b);
-        dummy.updateMatrix();
-        mesh.setMatrixAt(i,dummy.matrix);
-      });
-      mesh.instanceMatrix.needsUpdate=true;
-    }
-    ripples.add(mesh);
-    move(0);
-    animations.push(move);
+    art.water(x,z,w,d,y,color,{sky:act===3?0x9ba7aa:0x8ba4b4,quiet:act===1,
+      sun:act===3?0xffc780:0xf4ceba,light:act===3?[-.23,.113,-.97]:[-.49,.28,-.81]});
   }
 
   const bounds = [-8,8,-13,9];
   let spawn = [0,1.68,5.2], look = [0,1.34,-3.6];
   if (act === 0) {
-    stage(0x766f84,.028,0x5d5949,0xffc28a,{
-      top:0x323f62,horizon:0xb58591,cloud:0xd09a9f,shade:0x555373,cover:.38,glow:.34
+    stage(0x7f7b80,.028,0xaaa38e,0xffc28a,{
+      top:0x426184,horizon:0xe0ad91,cloud:0xf0b998,shade:0x596074,cover:.42,glow:.39,solar:.14,drift:.68
     });
     coastalRidges();
     water(0,-24,70,16,-.61,0x416471);
@@ -447,8 +465,8 @@
       scatter(stoneShape,0x5e594b,i%2 ? -.15 : .12,.124,3.2-i*.42,.085,.009,.125,(i%2?1:-1)*.32);
     }
   } else if (act === 2) {
-    stage(0x74748c,.030,0x605c50,0xffc08b,{
-      top:0x3e4963,horizon:0x9a8394,cloud:0xe2ac9b,shade:0x64637d,cover:.45,glow:.22
+    stage(0x747984,.030,0xa5a398,0xffc08b,{
+      top:0x425774,horizon:0xb6a3a4,cloud:0xdab2a5,shade:0x59677b,cover:.47,glow:.22,drift:.77
     });
     coastalRidges();
     water(0,-24,68,17,-.62,0x37636e);
@@ -475,7 +493,7 @@
     }
   } else {
     stage(0xdfab91,.022,null,0xffc284,{
-      top:0x67658a,horizon:0xf2a46e,cloud:0xf8bd8e,shade:0x8c7187,cover:.41,glow:.48,sun:.35
+      top:0x557fa7,horizon:0xf5b28a,cloud:0xffc295,shade:0x818499,cover:.44,glow:.55,sun:.54,solar:.108,drift:.68
     },2.64);
     coastalRidges();
     box(0,-.21,9.5,52,.4,16,0x8c8e72);
@@ -497,17 +515,12 @@
         if(z<.5) curve(scene,[[x,.56,z],[x,.40,z+.57],[x,.56,z+1.2]],.017,0xb29166,'cloth');
       }
     }
-    const hill = shape(stoneShape,0x766f59,5.7,-.86,-14.3,4.8,2.9,3.8,scene,0,'stone');
+    const hill = shape(headlandShape,0x766f59,5.7,-1.12,-14.3,5.2,2.91,4.06,scene,0,'stone');
     hill.rotation.y = -.43;
     const tower = lighthouse(5.75,-14.3,1.13,.77);
     for(let i=0;i<36;i++){
       const x=range(2.8,10.25),z=range(-17.8,-12.8);
       rock(x,z,range(.27,.85),range(-.45,.18));
-    }
-    for(let i=0;i<25;i++){
-      const row=i*.41;
-      scatter(boxShape,pick([0xffd0a1,0xd99a63,0xe5b389]),-3.5-.19*row+range(-.62,.63),-.622,-21+row,
-        range(.17,1.14),.006,range(.022,.065));
     }
     const beam = new T.Mesh(new T.ConeGeometry(.76,8.5,13,1,true),
       new T.MeshBasicMaterial({color:0xffdc91,transparent:true,opacity:.17,depthWrite:false,side:T.DoubleSide}));
@@ -517,7 +530,6 @@
     beamPivot.rotation.y=.36;
     beamPivot.add(beam);
     animations.push(t => { beamPivot.rotation.y=.36+Math.sin(t*.37)*.47; });
-    shape(softShape,0xffd899,-9,4.08,-38,1.68,1.68,1.68,scene,1.6);
     animal(-1.39,.26,0xdd8149,2.93,null,1.0);
     animal(-2.29,-.05,0x535859,2.82,null,1.2,true);
     const boat = group(2.0,-.56,-10.0);
@@ -546,6 +558,11 @@
     bounds[0] = -3.14; bounds[1]=3.14; bounds[2] = -2.15;
     obstacles.push([-1.79,-1.03,-.15,.65],[-2.67,-1.92,-.47,.35]);
   }
+  const shoreBloom=Array.from({length:18},(_,i)=>{
+    const side=i%2?1:-1;
+    return [side*range(1.48,2.03),range(act===1?-.80:-1.62,4.36),range(.40,.69),range(0,6.28),pick([0xfff3dd,0xf0deb6])];
+  });
+  art.flowers(shoreBloom,0xffd5ad,1.21);
   for(const sign of [-1,1]) {
     const x=sign*(act===3?2.62:1.48);
     if(act===1 || act===3) {
@@ -562,5 +579,5 @@
     }
   }
   addInstances();
-  return {spawn, look, bounds, obstacles, animate(time) { for (const update of animations) update(time); }};
+  return {spawn, look, bounds, obstacles, animate(time) { art.animate(time);for (const update of animations) update(time); }};
 };

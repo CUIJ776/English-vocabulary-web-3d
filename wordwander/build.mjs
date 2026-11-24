@@ -9,8 +9,11 @@ const scenes = readdirSync(new URL(sceneFolder, import.meta.url))
   .filter(file => /^(garden|station|lighthouse|museum)-[0-3]\.jpg$/.test(file))
   .map(file => sceneFolder+file);
 if (scenes.length !== 16) throw new Error('Four scene images per story are required.');
+const surfaceFolder = 'assets/world-surfaces/';
+const surfaceMaps = ['forest','rock','boards','pavers'].flatMap(material=>
+  ['color','normal'].map(channel=>`${surfaceFolder}${material}-${channel}.jpg`));
 const styles = ['style.css', 'assets/motion/motion.css', 'book.css', 'catalog.css', 'world.css'];
-const scripts = ['assets/motion/motion.js', 'book.js', 'assets/vendor/three.min.js', 'world-art.js', 'world-craft.js', 'world-garden.js',
+const scripts = ['assets/motion/motion.js', 'book.js', 'assets/vendor/three.min.js', 'world-art.js', 'world-head-data.js', 'world-figure.js', 'world-craft.js', 'world-garden.js',
   'world-lighthouse.js', 'world-station.js', 'world-museum.js', 'world-study.js', 'scene-3d.js', 'lesson.js', 'episodes.js', 'app.js'];
 const media = {
   'assets/bookshelf-cover.jpg': 'image/jpeg',
@@ -25,7 +28,7 @@ if (process.argv.includes('--web')) {
   const root = realpathSync(fileURLToPath(new URL('./',import.meta.url)));
   const output = resolve(root,'dist-web');
   if (relative(root,output) !== 'dist-web') throw new Error('Invalid web build path.');
-  const records = [...scripts,...styles,...scenes,...Object.keys(media),
+  const records = [...scripts,...styles,...scenes,...surfaceMaps,`${surfaceFolder}ASSETS.md`,...Object.keys(media),
     'assets/wenkai-book.woff2','assets/wenkai-book-OFL.txt','assets/vendor/LICENSE'];
   const files = new Map(records.map(path=>[path,readFileSync(resolve(root,path))]));
   const urls = Object.fromEntries(Object.entries(clips).map(([text,{file,wav}]) => {
@@ -71,6 +74,8 @@ html = html.replace(/src="(assets\/[^"]+)"/g, (tag, file) => {
   return source ? `src="${source}"` : tag;
 });
 html = html.replace('<script src="lesson.js"></script>', tag => `<script>window.STORY_ART=${JSON.stringify(images)};</script>${tag}`);
+html = html.replace('<script src="world-art.js"></script>', tag =>
+  `<script>window.WW_SURFACE_MAPS=${JSON.stringify(Object.fromEntries(surfaceMaps.map(path=>[path,embed(path,'image/jpeg')])))};</script>${tag}`);
 html = html.replace('<script src="assets/audio.js"></script>', () => `<script>${audioScript('STORY_AUDIO',
   Object.fromEntries(Object.entries(clips).map(([line,{wav}])=>[line,wav.toString('base64')])) )}</script>`);
 html = html.replace('<script src="assets/vendor/three.min.js"></script>', match =>

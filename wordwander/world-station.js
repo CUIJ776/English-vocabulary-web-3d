@@ -100,8 +100,17 @@
   }
   function tower(x,z) {
     const root=group(x,0,z);
-    m('box',0x5b6268,0,1.67,0,4.6,3.34,3.83,root,0,'stone');
-    m('bevel',0x788282,0,3.41,0,4.86,.24,4.08,root,0,'metal');
+    m('box',0x74858b,0,1.67,0,4.6,3.34,3.83,root,0,'stone');
+    m('bevel',0x606f71,0,3.41,0,4.86,.24,4.08,root,0,'metal');
+    m('box',0x484e4d,0,.205,0,4.69,.42,3.93,root,0,'stone');
+    for(const side of [-1,1]) {
+      for(let row=0;row<12;row++) {
+        const band=(row%3===0?0x7d8785:0x6f7b7c);
+        m('box',band,side*2.323,.53+row*.225,0,.044,.206,3.82,root,0,'metal');
+      }
+      m('bevel',0x42565d,side*2.31,1.74,1.87,.116,3.01,.118,root,0,'metal');
+      m('bevel',0x526970,side*2.31,3.20,0,.12,.117,3.97,root,0,'metal');
+    }
     const dome=new T.IcosahedronGeometry(1,2);
     m(dome,0xc2c8c8,0,3.57,-.32,1.66,1.46,1.54,root,0,'stone');
     const frame=new T.LineSegments(new T.EdgesGeometry(dome,6),new T.LineBasicMaterial({color:0x87999f,transparent:true,opacity:.46}));
@@ -109,11 +118,17 @@
     frame.scale.set(1.664,1.462,1.544);
     root.add(frame);
     m('tube',0x84999d,0,3.62,-.32,1.71,.17,1.59,root);
-    m('box',0x2e4951,.44,1.11,1.932,.9,2.25,.07,root);
+    m('bevel',0x4a5654,.44,1.13,1.94,1.01,2.34,.10,root,0,'metal');
+    m('bevel',0x2e4951,.44,1.11,1.993,.86,2.19,.059,root,0,'metal');
+    m('bevel',0x6f7972,.44,.09,2.04,1.12,.17,.29,root,0,'stone');
+    m('bevel',0xb09d78,.76,1.06,2.029,.092,.029,.054,root,0,'metal');
+    m('bevel',0x4f5b57,.44,2.45,2.066,1.46,.116,.59,root,0,'metal');
     for(const x1 of [-1.49,-.56,1.6]) {
-      m('box',charcoal,x1,1.91,1.945,.66,.86,.06,root);
-      m('box',amber,x1,1.91,1.984,.54,.72,.03,root,.72);
-      m('box',steel,x1,1.91,2.014,.035,.72,.037,root);
+      m('bevel',charcoal,x1,1.91,1.945,.71,.89,.108,root,0,'metal');
+      m('box',act===0?0xe5ad70:0x92958c,x1,1.91,1.985,.54,.72,.03,root,act===0?.62:.0,'glaze');
+      m('bevel',steel,x1,1.91,2.022,.038,.72,.027,root,0,'metal');
+      m('bevel',steel,x1,1.96,2.022,.55,.038,.027,root,0,'metal');
+      m('bevel',0x6b7879,x1,1.49,2.041,.76,.079,.272,root,0,'metal');
     }
     pole(1.68,4.55,-.5,.048,2.87,steel,root);
     m('box',steel,1.68,5.33,-.5,1.12,.037,.041,root);
@@ -124,16 +139,15 @@
   if(outside) {
     k.light(act===0?0x566779:0xbea491,0x50616a,act===0?.036:.023,act===0?0xa2c2e1:0xffc18a,act===0?1.48:2.70,[-6,8,-3]);
     art.sky(act===0?
-      {top:0x25384a,horizon:0x778b9e,cloud:0x69758a,shade:0x222d3e,cover:.28,density:1.08,glow:.03}:
-      {top:0x7792b0,horizon:0xefad76,cloud:0xffdaac,shade:0x68788f,cover:.43,glow:.44,sun:.36});
-    m('box',0x5b5f5d,0,-.21,0,52,.40,60,scene,0,'terrain');
+      {top:0x32495e,horizon:0x899daa,cloud:0x7d97a7,shade:0x283946,cover:.31,density:1.08,glow:.04,drift:1.55}:
+      {top:0x6d96b9,horizon:0xffcb9c,cloud:0xffe1bc,shade:0x79889d,cover:.43,glow:.51,sun:.55,solar:.20,drift:1.0});
+    m('box',act===0?0x879497:0xb1a791,0,-.21,0,52,.40,60,scene,0,'rock');
     mountainRidge(-34,22,act===0?12:8.5,act===0?0x536579:0x697889,2.1);
     mountainRidge(-25,15,act===0?7.5:5.1,act===0?0x414f64:0x6a7784,.7);
     for(let i=0;i<23;i++) {
       const angle=(i/28)*Math.PI*2, d=r(21,42);
       if(Math.sin(angle)>-.5)b('stone',choose([0x485b73,0x526780,0x657384,0x4f626d]),Math.cos(angle)*d,r(-1.3,1.7),Math.sin(angle)*d,r(4,8),r(4,8),r(3,7),r(-.39,.39),r(0,6),r(-.40,.40));
     }
-    if(act===3) m('globe',0xffc986,-8,7.7,-28,.88,.88,.88,scene,1.76);
     for(let i=0;i<36;i++) {
       if(act===0 || 8-i*.55<-3.4)b('bevel',choose(slate),r(-1.58,1.52),.003,8-i*.55,r(.71,1.38),.035,.48,0,r(-.08,.08),0,'stone');
       const x=(i%2?1:-1)*r(2.61,9.5), z=r(-13,9);
@@ -153,16 +167,18 @@
     }
     if(act===0) {
       const geometry=new T.BufferGeometry();
-      const samples=Array.from({length:210},()=>[r(-11,11),r(0,7),r(-11,10)]);
+      const samples=Array.from({length:275},()=>[r(-11,11),r(0,7),r(-11,10),r(.17,.36),r(7.1,10.2)]);
       const coordinates=new Float32Array(samples.length*6);
       geometry.setAttribute('position',new T.BufferAttribute(coordinates,3));
       const rain=new T.LineSegments(geometry,new T.LineBasicMaterial({color:0xb3d4de,transparent:true,opacity:.47,depthWrite:false}));
       rain.frustumCulled=false;
       scene.add(rain);
       const setRain=t=>{
-        samples.forEach(([x,y,z],i)=>{
-          const h=(y-t*9%7+7)%7;
-          coordinates.set([x+(7-h)*.12,h,z,x+(7-h)*.12-.075,h+.29,z+.04],i*6);
+        const lean=.14+Math.sin(t*.89)*.027;
+        samples.forEach(([x,y,z,trail,speed],i)=>{
+          const h=(y-t*speed%7+7)%7;
+          const x0=x+(7-h)*lean;
+          coordinates.set([x0,h,z,x0-trail*lean,h+trail,z+.035],i*6);
         });
         geometry.attributes.position.needsUpdate=true;
       };
@@ -186,7 +202,7 @@
     }
   } else {
     k.light(0x6b7781,0x5b5952,.013,0xffdbad,1.85,[1.2,7,4.5]);
-    art.sky({top:0x3f536e,horizon:0x819bab,cloud:0x94a8b4,shade:0x4b5d72,cover:.31,glow:.05});
+    art.sky({top:0x3f536e,horizon:0x819bab,cloud:0x94a8b4,shade:0x4b5d72,cover:.31,glow:.05,drift:1.32});
     bounds=[-5.9,5.9,-8.48,6.2];
     m('box',0x626d6a,0,-.12,-1.15,13.2,.24,16.4);
     for(let x=-6;x<=6;x++) for(let z=-8;z<=6;z++) {
@@ -280,8 +296,8 @@
     }
     poolShape.closePath();
     const poolGeometry=new T.ShapeGeometry(poolShape);
-    const poolMaterial=new T.MeshStandardMaterial({color:act===0?0x536d7a:0x8d9387,roughness:.29,metalness:.22,
-      transparent:true,opacity:.74,depthWrite:false});
+    const poolMaterial=new T.MeshPhysicalMaterial({color:act===0?0x637e87:0xa6a182,roughness:.24,metalness:.13,
+      clearcoat:.8,clearcoatRoughness:.18,transparent:true,opacity:.65,depthWrite:false});
     for(const [x,z,w,d] of [[-1.60,2.71,.81,.48],[1.32,-1.12,.94,.54],[-2.51,-3.65,.88,.45],[2.22,3.76,.66,.37]]){
       const pool=new T.Mesh(poolGeometry,poolMaterial);
       pool.rotation.x=-Math.PI/2;
@@ -320,5 +336,5 @@
     }
   }
   k.finish();
-  return {spawn,look,bounds,obstacles,animate(time){anim.forEach(update=>update(time));}};
+  return {spawn,look,bounds,obstacles,animate(time){k.animate(time);anim.forEach(update=>update(time));}};
 };

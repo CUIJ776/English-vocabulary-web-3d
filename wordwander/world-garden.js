@@ -5,10 +5,13 @@
   const greens=[0x48632e,0x698344,0x2f492c,0x546b33,0x7c8b49];
   const petals=[0xc85489,0xe992b1,0x9c72b0,0xeaab70,0xf5dcb6];
   const stone=[0x968c74,0xa89e8b,0x807769,0xbfb098,0x6c6c63];
+  const upward=new T.Vector3(0,1,0),direction=new T.Vector3();
+  const branchRotation=new T.Quaternion(),branchAngles=new T.Euler();
   k.light(act===3?0xe8c4a1:0xc1d2c1,0x4b5136,.024,act===3?0xffba83:0xffdfaa,2.55,[-6,9,-4]);
   art.key(0xffe0bd,1.48,[3.5,5,8],[0,1,-1],false);
-  art.sky({top:0x8fb8c6,horizon:act===3?0xf4d5ad:0xe8e4c3,cloud:0xfff2ce,shade:0x9fac9a,cover:.47,glow:act===3?.32:.14});
-  m('box',0x464728,0,-.19,0,56,.36,62,scene,0,'terrain');
+  art.sky({top:act===3?0x82aebe:0x78aec8,horizon:act===3?0xffdab0:0xd6e4d0,
+    cloud:0xfff7e6,shade:0x8d9696,cover:.45,glow:act===3?.36:.18,solar:.30});
+  m('box',0x92917a,0,-.19,0,56,.36,62,scene,0,'forest');
   function block(x,z,w,d) { obstacles.push([x-w/2,x+w/2,z-d/2,z+d/2]); }
   function rock(x,z,scale) {
     b('stone',choose(stone),x,scale*.24-.025,z,scale,scale*.53,scale*.76,r(0,1),r(0,6));
@@ -16,7 +19,7 @@
   function leaves(x,y,z,radius,count,tints=greens){
     for(let i=0;i<count;i++){
       const spin=r(0,Math.PI*2), radiusAt=radius*r(.34,1);
-      const size=radius*r(.11,.29);
+      const size=radius*r(.086,.215);
       b('leaf',choose(tints),x+Math.cos(spin)*radiusAt,y+r(-.32,.55)*radius,z+Math.sin(spin)*radiusAt,
         size,size*r(.78,1.4),size,r(-.9,.79),spin,r(-.87,.87));
     }
@@ -43,56 +46,131 @@
       leaves(px,py+.13,pz,size*.67,14);
     }
   }
+  function twig(a,end,radius,color) {
+    direction.set(end[0]-a[0],end[1]-a[1],end[2]-a[2]);
+    const length=direction.length();
+    branchRotation.setFromUnitVectors(upward,direction.normalize());
+    branchAngles.setFromQuaternion(branchRotation);
+    b('branch',color,(a[0]+end[0])*.5,(a[1]+end[1])*.5,(a[2]+end[2])*.5,
+      radius,length,radius,branchAngles.x,branchAngles.y,branchAngles.z,'bark');
+  }
   function tree(x,z,height,flower=false) {
-    b('tube',0x59472e,x,height*.37,z,height*.064,height*.74,height*.055,0,0,r(-.1,.1),'bark');
-    for(const sign of [-1,1]) b('tube',0x68583d,x+sign*height*.14,height*.64,z,height*.036,height*.46,height*.031,
-      r(-.2,.2),0,sign*-.65,'bark');
-    for(let j=0;j<15;j++){
+    const lean=r(-.19,.19)*height;
+    twig([x,-.09,z],[x+lean,height*.78,z+.07],height*.066,0x715d44);
+    for(const side of [-1,1]) {
+      const fork=r(.39,.52)*height;
+      const tip=[x+side*r(.24,.33)*height+lean*.78,height*r(.79,.93),z+r(-.17,.16)*height];
+      twig([x+lean*fork/(height*.78),fork,z+.042],tip,height*.033,0x775f43);
+      twig([x+(tip[0]-x)*.62,height*.70,z+(tip[2]-z)*.65],
+        [tip[0]-side*.025*height,tip[1]+.16*height,tip[2]-.071*height],height*.018,0x796449);
+    }
+    const distant=z<-7 || Math.abs(x)>5;
+    for(let j=0;j<(distant?9:14);j++){
       const px=x+r(-1.1,1.1)*height*.34, py=height*r(.66,1.035), pz=z+r(-1.1,1.1)*height*.33;
       const crown=height*r(.14,.23);
-      b('canopy',choose(greens),px,py,pz,crown,crown*.56,crown*.82,r(0,1),r(0,6));
-      leaves(px,py+.02,pz,crown*1.15,23,flower&&j%3!==0?[...petals,...greens]:greens);
-      if(flower) for(let fl=0;fl<12;fl++) b('bud',choose(petals),px+r(-crown,crown),py+r(-.35,.53)*crown,
+      b('canopy',choose(greens),px,py,pz,crown*.83,crown*.58,crown*.73,r(0,1),r(0,6));
+      leaves(px,py+.02,pz,crown*1.21,distant?11:21,greens);
+      if(flower) for(let fl=0;fl<(distant?6:10);fl++) b('bud',choose(petals),px+r(-crown,crown),py+r(-.35,.53)*crown,
         pz+r(-crown,crown),height*.030,height*.017,height*.027,r(0,1),r(0,6));
     }
   }
   function path(length,width) {
-    for(let j=0;j<length;j++) for(let bin=-1;bin<=1;bin++) {
-      const z=8-j*.69, x=(width/3)*bin + Math.sin(z*.24)*.37+r(-.07,.07);
-      b('bevel',choose(stone),x,-.003+r(-.006,.005),z,width/3-r(.036,.066),.045,r(.60,.675),0,r(-.055,.055),0,'stone');
-      if(j%2===0) b('stone',choose(greens),x+r(-.31,.31),.024,z-.29,.082,.024,.079,0,r(0,6));
+    const position=[],uv=[],index=[];
+    for(let row=0;row<=length;row++) for(let col=0;col<=4;col++) {
+      const z=8-row*.69;
+      const half=width*.5+.07*Math.sin(z*1.62);
+      const x=(col/2-1)*half+Math.sin(z*.24)*.28;
+      position.push(x,.007+.008*Math.sin(z*2.7+x*2),z);
+      uv.push(x*.5,z*.5);
+      if (row<length && col<4) {
+        const a=row*5+col,b=a+5;
+        index.push(a,a+1,b,b,a+1,b+1);
+      }
     }
+    const surface=new T.BufferGeometry();
+    surface.setAttribute('position',new T.Float32BufferAttribute(position,3));
+    surface.setAttribute('uv',new T.Float32BufferAttribute(uv,2));
+    surface.setIndex(index);
+    surface.computeVertexNormals();
+    m(surface,0xdec9a8,0,0,0,1,1,1,scene,0,'pavers');
   }
   function kitten(x,z,yaw=0,size=1) {
-    const cat=group(x,0,z,yaw);cat.scale.setScalar(size);
-    const orange=0xdb853e,cream=0xffe5c9,dark=0x954f26;
-    m('globe',orange,0,.247,-.074,.20,.232,.284,cat,0,'fur');
-    m('globe',cream,0,.225,.098,.153,.170,.12,cat,0,'fur');
-    m('globe',orange,0,.463,.134,.205,.183,.167,cat,0,'fur');
+    const cat=group(x,0,z,yaw);cat.scale.setScalar(size*.79);
+    const orange=0xcf853f,cream=0xf4ddba,dark=0x93602e;
+    m('globe',orange,0,.241,-.080,.188,.224,.279,cat,0,'fur');
+    m('globe',cream,0,.225,.083,.147,.165,.126,cat,0,'fur');
+    const head=new T.Group();
+    head.position.set(0,.453,.135);
+    cat.add(head);
+    const skull=new T.SphereGeometry(1,34,24),points=skull.attributes.position,colors=[];
+    const ginger=new T.Color(orange),white=new T.Color(cream),tabby=new T.Color(dark),fur=new T.Color();
+    for(let i=0;i<points.count;i++) {
+      const x0=points.getX(i),y0=points.getY(i),z0=points.getZ(i);
+      const chin=Math.max(0,z0)**2*Math.exp(-x0*x0*5-(y0+.38)**2*8);
+      points.setXYZ(i,x0*(y0<0?.163:.178),y0*.159,z0*.147+.050*chin);
+      const patch=(1-T.MathUtils.smoothstep(y0,-.51,-.30))*Math.max(0,z0);
+      const stripes=Math.max(0,Math.cos(x0*22+y0*6+z0*3))**6 * T.MathUtils.smoothstep(y0,.02,.59);
+      fur.copy(ginger).lerp(tabby,stripes*.66).lerp(white,patch);
+      colors.push(fur.r,fur.g,fur.b);
+    }
+    skull.computeVertexNormals();
+    skull.setAttribute('color',new T.Float32BufferAttribute(colors,3));
+    const furMaterial=k.mat(0xffffff,0,'fur').clone();
+    furMaterial.vertexColors=true;
+    const face=new T.Mesh(skull,furMaterial);
+    face.castShadow=true;
+    face.receiveShadow=true;
+    head.add(face);
+    const earForm=new T.Shape();
+    earForm.moveTo(-.073,-.012);
+    earForm.quadraticCurveTo(-.078,.073,-.044,.145);
+    earForm.quadraticCurveTo(-.033,.163,-.018,.147);
+    earForm.quadraticCurveTo(.045,.084,.069,-.019);
+    earForm.quadraticCurveTo(-.013,-.027,-.073,-.012);
+    const earShell=new T.ExtrudeGeometry(earForm,{depth:.017,bevelEnabled:true,bevelThickness:.008,bevelSize:.007,bevelSegments:2});
+    const eyes=[];
     for(const side of [-1,1]) {
-      m('cone',orange,side*.135,.633,.13,.097,.21,.085,cat,0,'fur').rotation.z=side*-.22;
-      m('cone',0xe7a088,side*.137,.64,.171,.052,.112,.026,cat).rotation.z=side*-.22;
-      m('globe',0xa76b36,side*.088,.485,.267,.049,.053,.024,cat);
-      m('globe',0x84754a,side*.087,.480,.283,.039,.046,.014,cat,0,'glaze');
-      m('globe',0x20251f,side*.087,.479,.293,.018,.035,.009,cat);
-      m('globe',0xfff2cf,side*.084-.012,.501,.299,.012,.013,.006,cat);
-      m('globe',cream,side*.052,.39,.271,.071,.052,.042,cat);
+      const ear=new T.Group();
+      ear.position.set(side*.111,.098,-.019);
+      ear.rotation.set(-.12,side*.23,side*-.29);
+      head.add(ear);
+      m(earShell,orange,0,0,0,-side,1,1,ear,0,'fur');
+      m(earShell,0xd69b83,0,.016,.018,-side*.64,.75,.45,ear,0,'fur');
+      const eye=new T.Group();
+      eye.position.set(side*.078,.025,.121);
+      head.add(eye);
+      m('globe',0x86572e,0,0,0,.044,.039,.025,eye,0,'fur');
+      m('globe',0x93763d,0,-.003,.018,.036,.031,.012,eye,0,'glaze');
+      m('globe',0x171d13,0,-.003,.027,.011,.027,.005,eye,0,'glaze');
+      m('globe',0xf9ebca,-.007,.006,.031,.005,.005,.002,eye);
+      eyes.push(eye);
       m('globe',cream,side*.146,.084,.18,.079,.078,.108,cat,0,'fur');
       m('globe',orange,side*.146,.111,-.219,.078,.112,.118,cat);
       for(let i=0;i<3;i++){
-        const y=.385+i*.012;
-        curve(cat,[[side*.094,y,.312],[side*.164,y+.016,.32],[side*.232,y+.026+i*.007,.317]],.0019,0xe8d5b5);
+        const y=-.073+i*.014;
+        curve(head,[[side*.071,y,.169],[side*.14,y+.017,.172],[side*.214,y+i*.014,.170]],.0013,0xe8d5b5);
       }
-      for(let i=0;i<3;i++) m('globe',dark,side*(.035+i*.023),.594-i*.009,.204+i*.018,.015,.023,.018,cat,0,'fur');
     }
-    m('globe',0xbf7865,0,.417,.314,.033,.022,.019,cat,0,'glaze');
+    m('globe',0xaf7568,0,-.048,.188,.024,.015,.013,head,0,'glaze');
+    const collar=m(new T.TorusGeometry(.115,.013,7,28),0x5b6152,0,.347,.081,1,.92,1,cat,0,'cloth');
+    collar.rotation.x=Math.PI*.5-.23;
+    const tag=m('tube',0xc7a369,.023,.287,.185,.034,.012,.034,cat,0,'metal');
+    tag.rotation.x=Math.PI*.5;
+    m('globe',0x775a32,.023,.308,.191,.006,.007,.002,cat,0,'metal');
     const tail=new T.Group();
     tail.position.set(0,.2,-.29);
     cat.add(tail);
     curve(tail,[[0,0,0],[-.08,.077,-.13],[-.134,.232,-.10],[-.128,.345,-.065]],.051,orange,'fur');
     m('globe',cream,-.128,.347,-.064,.051,.055,.047,tail,0,'fur');
     contact(x,z,.36*size,.32*size);
-    motion.push(t=>{tail.rotation.y=Math.sin(t*2)*.28;tail.rotation.z=Math.sin(t*2.4)*.08;});
+    motion.push(t=>{
+      const cycle=(t+Math.abs(x))%4.3;
+      const blink=cycle<.18?Math.sin(cycle*Math.PI/.18):0;
+      for(const eye of eyes) eye.scale.y=1-.9*blink;
+      head.rotation.y=Math.sin(t*.55+x)*.09;
+      tail.rotation.y=Math.sin(t*1.32)*.24;
+      tail.rotation.z=Math.sin(t*1.8)*.065;
+    });
     return cat;
   }
   function bench(x,z,yaw=0) {
@@ -184,6 +262,12 @@
     shrub(x,z,r(.74,1.2));
     if(i%2===0) tree(x,z,r(2.25,4.0),i%4===0);
   }
+  const hill=art.crag(1,true);
+  for(const side of [-1,1]) for(let i=0;i<5;i++) {
+    const z=-16+i*7.4;
+    m(hill,choose([0x758259,0x66785d,0x7b8059]),side*r(14,16),-.35,z,r(4.3,6.2),r(.92,1.66),r(4.9,6.6),scene,0,'terrain');
+    tree(side*r(9.1,11.9),z,r(2.8,4.2));
+  }
   for(let i=-18;i<22;i++) {
     const z=i*.63;
     for(const side of [-1,1]) {
@@ -230,10 +314,24 @@
   }
   for(const side of [-1,1]) for(let i=0;i<32;i++) {
     const z=7.5-i*.45;
-    const x=side*(1.46+.17*Math.sin(z*.24)) + r(-.07,.07);
+    const x=side*((act===2?1.66:1.23)+.07*Math.sin(z*1.62))+.28*Math.sin(z*.24)+r(-.06,.06);
     b('bevel',choose(stone),x,.042,z,r(.17,.24),r(.09,.135),r(.33,.45),0,r(-.16,.16),0,'stone');
     for(let flake=0;flake<4;flake++) b('stone',choose(stone),x-side*r(.08,.32),.018,z+r(-.2,.2),
       r(.025,.060),r(.014,.028),r(.032,.064),0,r(0,6));
+  }
+  const flowerHalf=act===2?1.81:1.42;
+  for(const [bloom,tint] of [[0xe89d91,0xfff2e2],[0xffe6ac,0xf1ead3],[0xae8bbf,0xf1e4f5]]) {
+    const planting=Array.from({length:15},(_,i)=>{
+      const z=4.68-r(0,9.8), side=i%2?1:-1;
+      return [side*(flowerHalf+r(0,.42))+.28*Math.sin(z*.24),z,r(.57,1.14),r(0,6.28),tint];
+    });
+    art.flowers(planting,bloom,.78);
+  }
+  for(let i=0;i<138;i++) {
+    const z=r(-9,7.8), side=i%2?1:-1;
+    const x=side*r(flowerHalf,6.8)+.28*Math.sin(z*.24);
+    for(let j=0;j<4;j++) b('leaf',choose(greens),x+r(-.10,.10),.071,z+r(-.10,.10),
+      .017,r(.060,.111),.05,r(-.31,.31),r(0,6.28),r(-.60,.60));
   }
   for(const [x,z,tint] of [[-1.83,.75,0xe9b876],[1.98,-1.22,0xf0d4a1]]) {
     const insect=group(x,.49,z);
@@ -254,5 +352,5 @@
     });
   }
   k.finish();
-  return {spawn,look,bounds:[-6.4,6.4,-14,10],obstacles,animate(t){motion.forEach(update=>update(t));}};
+  return {spawn,look,bounds:[-6.4,6.4,-14,10],obstacles,animate(t){k.animate(t);motion.forEach(update=>update(t));}};
 };
