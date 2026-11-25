@@ -1,4 +1,8 @@
 (window.WW_WORLDS ||= {}).garden = function({T,scene},act) {
+  return gardenWorld({T,scene},act);
+};
+
+function gardenWorld({T,scene},act,map) {
   const k=worldCraft(T,scene,383+act*87);
   const cast=gardenActors.chapter(T);
   const {mesh:m,batch:b,range:r,choose,group,limb,curve,contact,person,art}=k;
@@ -8,11 +12,6 @@
   const stone=[0x968c74,0xa89e8b,0x807769,0xbfb098,0x6c6c63];
   const upward=new T.Vector3(0,1,0),direction=new T.Vector3();
   const branchRotation=new T.Quaternion(),branchAngles=new T.Euler();
-  k.light(act===3?0xe8c4a1:0xc1d2c1,0x4b5136,.024,act===3?0xffba83:0xffdfaa,2.55,[-6,9,-4]);
-  art.key(0xffe0bd,1.48,[3.5,5,8],[0,1,-1],false);
-  art.sky({top:act===3?0x82aebe:0x78aec8,horizon:act===3?0xffdab0:0xd6e4d0,
-    cloud:0xfff7e6,shade:0x8d9696,cover:.45,glow:act===3?.36:.18,solar:.30});
-  m('box',0x92917a,0,-.19,0,56,.36,62,scene,0,'forest');
   function block(x,z,w,d) { obstacles.push([x-w/2,x+w/2,z-d/2,z+d/2]); }
   function rock(x,z,scale) {
     b('stone',choose(stone),x,scale*.24-.025,z,scale,scale*.53,scale*.76,r(0,1),r(0,6));
@@ -264,6 +263,12 @@
         .096-d*.010,.064,.066-d*.006);
     }
   }
+  if(!map) {
+  k.light(act===3?0xe8c4a1:0xc1d2c1,0x4b5136,.024,act===3?0xffba83:0xffdfaa,2.55,[-6,9,-4]);
+  art.key(0xffe0bd,1.48,[3.5,5,8],[0,1,-1],false);
+  art.sky({top:act===3?0x82aebe:0x78aec8,horizon:act===3?0xffdab0:0xd6e4d0,
+    cloud:0xfff7e6,shade:0x8d9696,cover:.45,glow:act===3?.36:.18,solar:.30});
+  m('box',0x92917a,0,-.19,0,56,.36,62,scene,0,'forest');
   path(33,act===2?3.3:2.45);
   for(let i=0;i<29;i++) {
     const sign=i%2?1:-1, z=r(-17,11), x=sign*r(2.05,7.9);
@@ -299,6 +304,7 @@
       b('box',0xa39171,side*7.5,.29,z,.074,.067,.64);
     }
   }
+  }
   function xiaolin(x,z,options,clip) {
     const original=person(x,z,{coat:0xc29b44,bag:true,...options});
     cast.mount('xiaolin',clip,original);
@@ -311,39 +317,52 @@
   }
   let look=[0,1.2,-3.7], spawn=[0,1.66,5.5];
   if(act===0) {
-    gate(-1.68);
+    if(!map)gate(-1.68);
     xiaolin(-1.04,2.54,{yaw:.37,pose:'listen',scale:1.08},'Listen');
     block(-1.04,2.54,.54,.47);
-    greenhouse(3.8,-10);
-    bench(2.2,-3.4,-.15);
+    if(!map) {
+      greenhouse(3.8,-10);
+      bench(2.2,-3.4,-.15);
+    }
     look=[-.18,1.28,-2];
   } else if(act===1) {
-    bench(-1.23,-.82,.47);
+    if(!map)bench(-1.23,-.82,.47);
     catActor(-.40,.39,.99,1.20,'GroundIdle');
     xiaolin(.45,.16,{yaw:-1.0,pose:'crouch',scale:1.08},'Crouch');
     block(.45,.16,.60,.51);
-    bloom(-.88,1.08,.26,9);
-    bloom(.97,-.12,.28,10);
-    greenhouse(4.1,-9.2);
+    if(!map) {
+      bloom(-.88,1.08,.26,9);
+      bloom(.97,-.12,.28,10);
+      greenhouse(4.1,-9.2);
+    }
     look=[0,.8,-2.0];spawn=[.24,1.65,3.0];
   } else if(act===2) {
-    greenhouse(0,-6.5);
+    if(!map)greenhouse(0,-6.5);
     person(-.62,-.02,{coat:0x9b8a74,yaw:.62,pose:'give',hat:true,scale:1.12,hair:0x8c8272});
     xiaolin(.64,-.09,{yaw:-.54,pose:'give',scale:1.08},'Offer');
-    basket(0,.83,.22);
     catActor(-.032,.22,.06,.56,'BasketIdle',.96,.046,.020);
-    m('bevel',0x79583e,0,.40,.19,.86,.77,.57,scene,0,'wood');
-    block(0,.19,.86,.57);block(-.62,-.02,.49,.45);block(.64,-.09,.49,.45);
+    if(!map) {
+      basket(0,.83,.22);
+      m('bevel',0x79583e,0,.40,.19,.86,.77,.57,scene,0,'wood');
+      block(0,.19,.86,.57);
+    }
+    block(-.62,-.02,.49,.45);block(.64,-.09,.49,.45);
     spawn=[0,1.64,3.21];look=[0,1.13,-2.56];
   } else {
-    tree(.6,-3.2,4.8,true);
-    gate(-6.2);
+    if(!map) {
+      tree(.6,-3.2,4.8,true);
+      gate(-6.2);
+    }
     xiaolin(-.76,-.28,{yaw:.42,pose:'give',scale:1.06},'Offer');
     person(0,.01,{coat:0x516c97,scale:.82,yaw:.16,pose:'cradle',style:'boy'});
     person(.77,-.36,{coat:0xccb098,scale:1.14,yaw:-.30,style:'mother'});
     catActor(-.014,.27,1.37,.73,'HeldIdle',.68,.008,.020);
     block(-.76,-.28,.52,.48);block(0,.01,.47,.44);block(.77,-.36,.55,.49);
     look=[0,1.14,-2.4];spawn=[.08,1.65,3.65];
+  }
+  if(map) {
+    return {obstacles,dispose:cast.dispose,
+      animate(t,dt){k.animate(t);cast.animate(dt);}};
   }
   for(const side of [-1,1]) for(let i=0;i<32;i++) {
     const z=7.5-i*.45;
@@ -387,4 +406,4 @@
   k.finish();
   return {spawn,look,bounds:[-6.4,6.4,-14,10],obstacles,dispose:cast.dispose,
     animate(t,dt){k.animate(t);motion.forEach(update=>update(t));cast.animate(dt);}};
-};
+}

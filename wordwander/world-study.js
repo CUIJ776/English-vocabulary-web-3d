@@ -61,12 +61,14 @@ const worldStudy = (() => {
   }
 
   function build(T,scene,episode,act,settings) {
-    const [name,title,evidence,translation,x,z]=exhibits[episode][act];
+    const [name,title,evidence,translation,defaultX,defaultZ]=exhibits[episode][act];
+    const [x,z]=settings.exhibitPosition ?? [defaultX,defaultZ];
     const words=window.EPISODES.find(story=>story.id===episode).words.slice(act*2,act*2+2);
     const finish=finishes[episode];
     const art=worldArt(T,scene);
     const exhibit=new T.Group();
     exhibit.position.set(x,0,z);
+    exhibit.scale.setScalar(settings.exhibitScale ?? 1);
     exhibit.rotation.y=Math.atan2(settings.spawn[0]-x,settings.spawn[2]-z)*.72;
     scene.add(exhibit);
     const plate=new T.Group();

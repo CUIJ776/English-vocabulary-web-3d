@@ -13,7 +13,7 @@ const storyScene3d = (() => {
   const touchKeys = new Map();
   const movement = new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyQ','KeyE']);
   const speed = 3.15;
-  let renderer, world, crossfade, mixer, animationFrame = 0, last = 0;
+  let renderer, world, crossfade, mixer, animationFrame = 0, last = 0, request;
   let pointer, immersive = false, notesOpen = false, failed = false, inView = true;
   const exhibitPosition = T && new T.Vector3();
 
@@ -36,11 +36,11 @@ const storyScene3d = (() => {
     }
   }
 
-  function makeWorld(episode, act) {
+  function makeWorld(episode, act, map) {
     const scene = new T.Scene();
     const camera = new T.PerspectiveCamera(58, 1, .08, 130);
     camera.rotation.order = 'YXZ';
-    const settings = window.WW_WORLDS[episode]({T, scene}, act);
+    const settings = map ? blenderMaps.mount(episode,act,scene,map) : window.WW_WORLDS[episode]({T, scene}, act);
     const exhibit = worldStudy.build(T,scene,episode,act,settings);
     const [x,y,z] = settings.spawn;
     const [lx,ly,lz] = settings.look;
@@ -155,7 +155,7 @@ const storyScene3d = (() => {
   function placeExhibitButton() {
     const {camera,exhibit} = world;
     const point=exhibit.anchor.getWorldPosition(exhibitPosition).project(camera);
-    const visible=!crossfade && point.z>-1 && point.z<1 && Math.abs(point.x)<.98 && Math.abs(point.y)<.90;
+    const visible=!request && !crossfade && point.z>-1 && point.z<1 && Math.abs(point.x)<.98 && Math.abs(point.y)<.90;
     exhibitButton.hidden=!visible;
     if (!visible) return;
     exhibitButton.style.left=`${Math.round(T.MathUtils.clamp((point.x+1)*canvas.clientWidth*.5,64,canvas.clientWidth-64))}px`;
@@ -246,10 +246,45 @@ const storyScene3d = (() => {
       fallback();
       return false;
     }
-    if (world?.episode === episode && world.act === act) return true;
+    if (request?.episode === episode && request.act === act) return true;
+    if (world?.episode === episode && world.act === act) {
+      if(request) blenderMaps.prune(episode,act);
+      request=undefined;
+      return true;
+    }
+    blenderMaps.prune(episode,act);
+    const pending=blenderMaps.load(episode,act);
+    const token={episode,act};
+    request=token;
+    exhibitButton.hidden=true;
+    const ready=asset=>{
+      if(request!==token) {
+        blenderMaps.discard(episode,act,pending);
+        return;
+      }
+      request=undefined;
+      if(install(episode,act,asset?pending:null)) blenderMaps.preload(episode,act+1);
+    };
+    if(pending.asset) {
+      ready(pending.asset);
+      return !failed;
+    }
+    pending.pending.then(ready);
+    return true;
+  }
+
+  function install(episode,act,map) {
     let next;
-    try { next = makeWorld(episode,act); }
-    catch (error) { console.error('Unable to build story world',error); fallback(); return false; }
+    try { next = makeWorld(episode,act,map); }
+    catch(error) {
+      if(map) {
+        console.warn('Unable to mount Blender map',error);
+        return install(episode,act,null);
+      }
+      console.error('Unable to build story world',error);
+      fallback();
+      return false;
+    }
     endTransition();
     const old = world;
     world = next;
@@ -259,6 +294,7 @@ const storyScene3d = (() => {
     controls.hidden = false;
     frame.setAttribute('data-scene-world','');
     frame.dataset.world = episode+'-'+act;
+    frame.dataset.map = map?'blender':'procedural';
     clearInput();
     if (old && old.episode===episode && !motion.matches && !document.hidden) {
       prepareMixer();
@@ -275,6 +311,8 @@ const storyScene3d = (() => {
   }
 
   function stop() {
+    request=undefined;
+    blenderMaps.prune('');
     cancelAnimationFrame(animationFrame);
     animationFrame = 0;
     endTransition();
@@ -287,6 +325,7 @@ const storyScene3d = (() => {
     setImmersive(false,false);
     frame.removeAttribute('data-scene-world');
     delete frame.dataset.world;
+    delete frame.dataset.map;
   }
 
   function isTextInput(target) {

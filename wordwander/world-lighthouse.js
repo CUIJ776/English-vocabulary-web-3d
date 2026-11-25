@@ -1,5 +1,9 @@
 /* Geometry, lighting and ambient motion for the four lighthouse chapters. */
 (window.WW_WORLDS ||= {}).lighthouse = function({T, scene}, act) {
+  return lighthouseWorld({T,scene},act);
+};
+
+function lighthouseWorld({T,scene},act,map) {
   let seed = 711 + act * 61;
   const rand = () => ((seed = (Math.imul(seed,1664525) + 1013904223) >>> 0) / 4294967296);
   const range = (low, high) => low + rand() * (high - low);
@@ -295,6 +299,19 @@
     });
     return root;
   }
+  if(map) {
+    const cast=[
+      [[-.69,2.29,0xd87534,.20,'letter',1.23]],
+      [[.80,-1.22,0xd98243,.28,'light',1.36]],
+      [[-.69,-.26,0xde7f3c,.83,'letter',1.28],[.74,-.91,0x535757,-.51,null,1.57,true]],
+      [[-1.39,.26,0xdd8149,2.93,null,1.0],[-2.29,-.05,0x535859,2.82,null,1.2,true]]
+    ][act];
+    for(const [x,z,color,yaw,prop,scale,badger] of cast) {
+      animal(x,z,color,yaw,prop,scale,badger);
+      obstacles.push([x-.38,x+.38,z-.34,z+.34]);
+    }
+    return {obstacles,animate(time){art.animate(time);for(const update of animations)update(time);}};
+  }
   function cottage(x,z,w,d,h,wall,roof) {
     const house = group(x,0,z);
     box(0,h*.5,0,w,h,d,wall,house,0,'stone');
@@ -580,4 +597,4 @@
   }
   addInstances();
   return {spawn, look, bounds, obstacles, animate(time) { art.animate(time);for (const update of animations) update(time); }};
-};
+}

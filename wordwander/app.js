@@ -84,6 +84,10 @@ function renderCatalog() {
   prepareWorldSurfaces(episode.id);
   gardenActors.preload(episode.id);
   const progress = getProgress(episode);
+  const questions=progress.mode==='review'?episode.review:episode.steps;
+  const mapAct=questions[progress.i]?.scene ?? 0;
+  blenderMaps.prune(episode.id,mapAct);
+  blenderMaps.preload(episode.id,mapAct);
   const inProgress = ['story','review'].includes(progress.mode);
   const action = inProgress ? ['继续学习', 'Continue learning'] : progress.mode === 'summary' ?
     ['查看复习结果', 'View review results'] : ['开启故事', 'Start story'];

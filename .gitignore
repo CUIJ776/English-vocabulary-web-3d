@@ -6,3 +6,6 @@
 /wordwander/.taste-skill/
 /wordwander/art-source/*.blend
 /wordwander/art-source/*.blend1
+/wordwander/art-source/story-maps/*.blend
+/wordwander/art-source/story-maps/*.blend1
+/wordwander/art-source/__pycache__/

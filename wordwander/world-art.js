@@ -265,13 +265,13 @@ function worldArt(T, scene) {
     clocks.push(t=>{time.value=t;});
   }
 
-  function water(x,z,width,depth,y,base,{sky=0x9cb4be,sun=0xffd19d,quiet=false,light=[-.29,.18,-.94]}={}) {
-    const time={value:0};
+  function water(x,z,width,depth,y,base,{sky=0x9cb4be,sun=0xffd19d,quiet=false,light=[-.29,.18,-.94],surface=null,banks=null}={}) {
     const material=new T.ShaderMaterial({name:'Wind over water',fog:true,
       uniforms:T.UniformsUtils.merge([T.UniformsLib.fog,{
-        clock:time,deepColor:{value:new T.Color(base)},skyColor:{value:new T.Color(sky)},
+        clock:{value:0},deepColor:{value:new T.Color(base)},skyColor:{value:new T.Color(sky)},
         sunColor:{value:new T.Color(sun)},light:{value:new T.Vector3(...light).normalize()},
-        amplitude:{value:quiet?.035:.079}
+        amplitude:{value:quiet?.025:.071}, stream:{value:banks?1:0},
+        banks:{value:new T.Vector2(...(banks ?? [0,0]))}
       }]),
       vertexShader:`uniform float clock,amplitude;
         varying vec3 surface;
@@ -286,8 +286,9 @@ function worldArt(T, scene) {
           gl_Position=projectionMatrix*mvPosition;
           #include <fog_vertex>
         }`,
-      fragmentShader:`uniform float clock,amplitude;
+      fragmentShader:`uniform float clock,amplitude,stream;
         uniform vec3 deepColor,skyColor,sunColor,light;
+        uniform vec2 banks;
         varying vec3 surface;
         #include <fog_pars_fragment>
         void main(){
@@ -296,29 +297,42 @@ function worldArt(T, scene) {
           float fade=1.-smoothstep(7.,45.,distance(cameraPosition,surface));
           vec2 slope=amplitude*(.65*vec2(.28,.76)*cos(dot(p,vec2(.28,.76))-clock*1.06)
             +.35*vec2(.89,-.47)*cos(dot(p,vec2(.89,-.47))+clock*.79));
-          float stagger=sin(dot(p,vec2(.42,-.31))+clock*.36);
-          slope+=fade*(vec2(3.1,1.8)*cos(dot(p,vec2(3.1,1.8))+.72*stagger+clock*1.42)*.016
-            +vec2(1.2,-4.6)*sin(dot(p,vec2(1.2,-4.6))-.58*stagger-clock*1.11)*.013);
+          float flow=clock*(.88+stream*.87);
+          float stagger=sin(dot(p,vec2(.42,-.57))+clock*.36);
+          slope+=fade*(vec2(3.1,1.8)*cos(dot(p,vec2(3.1,1.8))+.91*stagger-flow)*.021
+            +vec2(1.2,-4.6)*sin(dot(p,vec2(1.2,-4.6))-.74*stagger-flow*.73)*.014
+            +vec2(7.9,3.7)*sin(dot(p,vec2(7.9,3.7))+.66*stagger+flow*1.2)*.005);
           vec3 normal=normalize(vec3(-slope.x,1.,-slope.y));
           float crest=clamp(1.-dot(normal,eye),0.,1.);
-          float reflectance=.065+.61*pow(crest,4.);
+          float reflectance=.055+.43*pow(crest,3.);
           float shine=max(0.,dot(normal,normalize(light+eye)));
-          float glint=pow(shine,115.)*.63+pow(shine,26.)*.16;
-          vec3 reflected=mix(skyColor,sunColor,pow(max(0.,dot(reflect(-eye,normal),light)),12.)*.30);
-          vec3 waterColor=mix(deepColor*(.89+.13*sin(dot(p,vec2(1.6,1.1))+stagger-clock*.94)),reflected,reflectance);
-          waterColor+=sunColor*glint*(.38+.62*fade);
+          float glint=pow(shine,105.)*1.35+pow(shine,31.)*.16;
+          vec3 reflected=mix(skyColor*.63,sunColor,pow(max(0.,dot(reflect(-eye,normal),light)),22.)*.56);
+          vec3 waterColor=mix(deepColor*(.85+.16*sin(dot(p,vec2(1.6,1.1))+stagger-flow)),reflected,reflectance);
+          float lowChop=sin(dot(p,vec2(4.75,-1.2))-flow+.92*stagger);
+          float highChop=sin(dot(p,vec2(7.6,8.1))+flow*.73-.53*stagger);
+          float ridge=smoothstep(.56,1.14,.71*lowChop+.52*highChop);
+          float edge=1.-smoothstep(.08,.63,min(abs(p.y-banks.x),abs(p.y-banks.y)));
+          float foam=stream*ridge*(.13+.50*edge)*fade;
+          waterColor=mix(waterColor,vec3(.66,.81,.80),foam);
+          waterColor+=sunColor*glint*(.30+.70*fade)*(1.-.82*stream);
           gl_FragColor=vec4(waterColor,1.);
           #include <tonemapping_fragment>
           #include <colorspace_fragment>
           #include <fog_fragment>
         }`
     });
-    const geometry=new T.PlaneGeometry(width,depth,Math.min(60,Math.ceil(width)),Math.min(36,Math.ceil(depth*1.5)));
-    geometry.rotateX(-Math.PI/2);
-    const surface=new T.Mesh(geometry,material);
-    surface.position.set(x,y,z);
-    scene.add(surface);
+    if(surface) {
+      surface.material=material;
+    } else {
+      const geometry=new T.PlaneGeometry(width,depth,Math.min(60,Math.ceil(width)),Math.min(36,Math.ceil(depth*1.5)));
+      geometry.rotateX(-Math.PI/2);
+      surface=new T.Mesh(geometry,material);
+      surface.position.set(x,y,z);
+      scene.add(surface);
+    }
     clocks.push(t=>{material.uniforms.clock.value=t;});
+    return surface;
   }
 
   function flowers(plantings,petalColor,breeze=1) {
