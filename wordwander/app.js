@@ -52,8 +52,8 @@ function learnedWords() {
 function missedReview(episode, progress) {
   return episode.review.filter(q => progress.wrong.includes(q.id)).map(q => q.id);
 }
-function reviewQuestions() {
-  return state.practiceIds ? lesson.review.filter(q => state.practiceIds.includes(q.id)) : lesson.review;
+function reviewQuestions(episode = lesson, progress = state) {
+  return progress.practiceIds ? episode.review.filter(q => progress.practiceIds.includes(q.id)) : episode.review;
 }
 function isPractice() { return Array.isArray(state.practiceIds); }
 function libraryProgress(progress) {
@@ -84,8 +84,8 @@ function renderCatalog() {
   prepareWorldSurfaces(episode.id);
   gardenActors.preload(episode.id);
   const progress = getProgress(episode);
-  const questions=progress.mode==='review'?episode.review:episode.steps;
-  const mapAct=questions[progress.i]?.scene ?? 0;
+  const questions=progress.mode==='review'?reviewQuestions(episode,progress):episode.steps;
+  const mapAct=progress.mode==='summary'?3:questions[progress.i]?.scene ?? 0;
   blenderMaps.prune(episode.id,mapAct);
   blenderMaps.preload(episode.id,mapAct);
   const inProgress = ['story','review'].includes(progress.mode);

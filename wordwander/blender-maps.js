@@ -163,8 +163,8 @@ const blenderMaps = (() => {
       spawn:layout.spawn,look:layout.look,bounds:layout.bounds,
       obstacles:[...layout.colliders,...cast.obstacles],
       exhibitScale:.82,
-      exhibitPosition:episode==='museum' ? (act===2?[-2.04,.63]:[2.35,.44])
-        : episode==='lighthouse' && act===3 ? [1.62,2.45] : undefined,
+      exhibitPosition:episode==='museum' ? (act===2?[-1.62,.47]:[1.48,.23])
+        : episode==='lighthouse' && act===3 ? [1.44,1.91] : undefined,
       animate(time,dt) {
         art.animate(time);
         mixer.update(dt);
